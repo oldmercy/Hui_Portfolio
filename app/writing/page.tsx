@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import papers from "@/public/papers.json";
+import { getAllPapers } from "@/lib/papers";
+import type { Paper } from "@/lib/papers";
+import { getSiteContent } from "@/lib/site-content";
 
-type Paper = typeof papers[number];
+const { writing: wc } = getSiteContent("en");
 
 export default function WritingPage() {
+  const papers = getAllPapers("en");
   const featured = papers[0];
   const rest = papers.slice(1);
 
@@ -19,7 +22,7 @@ export default function WritingPage() {
           className="text-xs font-sans tracking-[0.18em] uppercase mb-4"
           style={{ color: "var(--text-tertiary)" }}
         >
-          Academic Writing
+          {wc.overline}
         </p>
         <h1
           className="font-serif font-light"
@@ -30,18 +33,17 @@ export default function WritingPage() {
             color: "var(--text-primary)",
           }}
         >
-          Papers &amp; Research
+          {wc.title}
         </h1>
         <p
           className="font-serif mt-4 max-w-[52ch]"
           style={{ color: "var(--text-secondary)", fontSize: "1.0625rem" }}
         >
-          Writing samples in economic research and business analytics — each available to read
-          in full with optional{" "}
-          <Link href="/tools" className="link-underline" style={{ color: "var(--accent)" }}>
-            TABE reading mode
+          {wc.body.split(wc.tabeLabel)[0]}
+          <Link href={wc.tabeHref} className="link-underline" style={{ color: "var(--accent)" }}>
+            {wc.tabeLabel}
           </Link>
-          .
+          {wc.body.split(wc.tabeLabel)[1]}
         </p>
       </div>
 
@@ -56,7 +58,7 @@ export default function WritingPage() {
               className="text-xs font-sans tracking-[0.18em] uppercase"
               style={{ color: "var(--text-tertiary)" }}
             >
-              Earlier Work
+              {wc.earlierWork}
             </span>
             <span className="flex-1 h-px" style={{ backgroundColor: "var(--border)" }} />
           </div>

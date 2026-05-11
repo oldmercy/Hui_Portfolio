@@ -1,0 +1,38 @@
+{
+  "slug": "panel-data-economic-growth",
+  "title": "Panel Data Methods in Economic Growth Analysis",
+  "category": "Economic Research",
+  "year": 2023,
+  "abstract": "A comparative study of fixed-effects, random-effects, and dynamic panel estimators applied to cross-country economic growth data. Using Arellano-Bond GMM and Blundell-Bond system GMM, this paper examines the persistence of growth shocks and the role of institutional quality in long-run convergence.",
+  "tags": ["Panel Data", "GMM", "Economic Growth", "Dynamic Panel"],
+  "readingTime": 22,
+  "featured": false,
+  "coverImage": "/Eco/1_img.png",
+  "pdfPath": "/Eco/1.pdf",
+  "body": [
+    {
+      "type": "section",
+      "heading": "Introduction",
+      "paragraphs": [
+        "The empirics of economic growth have been shaped decisively by the availability of panel data — repeated observations of the same countries over time. Panel data allows researchers to control for unobserved country-level heterogeneity, separating genuine convergence dynamics from the spurious correlation introduced by omitted variables that happen to correlate with both initial income and subsequent growth.",
+        "This paper revisits the classic convergence debate with a modern econometric toolkit, comparing the performance of static and dynamic panel estimators on a balanced panel of 68 countries observed over four decades."
+      ]
+    },
+    {
+      "type": "section",
+      "heading": "Econometric Framework",
+      "paragraphs": [
+        "We begin with the standard Mankiw-Romer-Weil specification, augmented with institutional quality measures from the World Governance Indicators database. The baseline fixed-effects estimator is consistent when T is large but suffers from the Nickell bias when T is small relative to N — precisely our situation with T = 10 five-year periods.",
+        "To address this, we implement the Arellano-Bond GMM estimator, which differences out fixed effects and uses lagged levels as instruments. We then apply the Blundell-Bond system GMM, which adds level equations with lagged differences as instruments, recovering efficiency when the autoregressive parameter is close to unity."
+      ]
+    },
+    {
+      "type": "section",
+      "heading": "Findings",
+      "paragraphs": [
+        "Conditional convergence is confirmed across all specifications, with an estimated convergence rate of approximately 2.1% per year under system GMM — closely matching the theoretical prediction of the Solow model and prior empirical work. Institutional quality enters significantly, with a one standard deviation improvement in the rule-of-law index associated with a 0.6 percentage point increase in steady-state growth.",
+        "The Sargan-Hansen test for instrument validity is comfortably passed across specifications, lending credibility to our identification strategy. First-stage F-statistics for weak instruments are above 10 throughout."
+      ]
+    }
+  ]
+}

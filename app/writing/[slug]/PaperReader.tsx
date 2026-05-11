@@ -3,10 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useTabe } from "@/app/components/ThemeProvider";
-import papers from "@/public/papers.json";
-
-type Paper = typeof papers[number];
-type Section = { type: "section"; heading: string; paragraphs: string[] };
+import { getAllPapers } from "@/lib/papers";
+import type { Paper, PaperSection as Section } from "@/lib/papers";
 
 /* ══════════════════════════════════════════════════════════════════
    PRETEXT — balanced headline calculation
@@ -545,9 +543,10 @@ function SectionHeading({ text }: { text: string }) {
 
 /* ── Previous / Next paper navigation ────────────────────────────── */
 function PaperNav({ currentSlug }: { currentSlug: string }) {
-  const idx = papers.findIndex((p) => p.slug === currentSlug);
-  const prev = idx < papers.length - 1 ? papers[idx + 1] : null;
-  const next = idx > 0 ? papers[idx - 1] : null;
+  const allPapers = getAllPapers("en");
+  const idx = allPapers.findIndex((p) => p.slug === currentSlug);
+  const prev = idx < allPapers.length - 1 ? allPapers[idx + 1] : null;
+  const next = idx > 0 ? allPapers[idx - 1] : null;
 
   return (
     <div className="grid sm:grid-cols-2 gap-6">

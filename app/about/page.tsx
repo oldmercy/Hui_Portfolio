@@ -1,22 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getSiteContent } from "@/lib/site-content";
 
-const skills = {
-  languages: ["Python", "R", "SQL", "SAS", "STATA"],
-  tools:     ["Tableau", "PowerBI", "Excel", "GitHub"],
-  libraries: ["EconML", "DoWhy", "SkLearn", "LightGBM", "Grf", "ggplot2", "xgboost", "dplyr"],
-  models:    ["Double Machine Learning", "Causal Forest / GRF", "Regression & Classification Trees", "Gradient Boosting & Bagging", "Panel Data Models", "Time Series (ARMA, NNAR)", "VAR / VEC", "GMM / MLE"],
-};
-
-const hobbies = [
-  { emoji: "📚", label: "Reading", desc: "Both fiction and non-fiction — from economic history to literary fiction." },
-  { emoji: "🎬", label: "Film", desc: "Classic cinema and contemporary art-house; always looking for recommendations." },
-  { emoji: "🧶", label: "Crochet", desc: "A calming practice of turning yarn into something tangible and geometric." },
-  { emoji: "🌱", label: "Gardening", desc: "Patient work — there is something deeply satisfying about watching things grow." },
-  { emoji: "🍳", label: "Cooking", desc: "Hangzhou-inflected home cooking, occasionally ambitious, often delicious." },
-  { emoji: "🐱", label: "Cats", desc: "A multi-cat household. They are research assistants who contribute nothing." },
-];
+const { about } = getSiteContent("en");
 
 function RevealSection({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -37,22 +24,40 @@ function RevealSection({ children, delay = 0 }: { children: React.ReactNode; del
   );
 }
 
+/** Render a bio paragraph, bolding any accent words defined in content. */
+function BioParagraph({ text }: { text: string }) {
+  const parts = text.split(
+    new RegExp(`(${about.bioAccentWords.join("|")})`, "g")
+  );
+  return (
+    <p>
+      {parts.map((part, i) =>
+        about.bioAccentWords.includes(part) ? (
+          <span key={i} style={{ color: "var(--accent)" }}>{part}</span>
+        ) : (
+          part
+        )
+      )}
+    </p>
+  );
+}
+
 export default function AboutPage() {
   return (
     <div className="max-w-5xl mx-auto px-6 pb-32">
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="pt-16 pb-12 border-b" style={{ borderColor: "var(--border)" }}>
         <p className="text-xs font-sans tracking-[0.18em] uppercase mb-4" style={{ color: "var(--text-tertiary)" }}>
-          Economist
+          {about.overline}
         </p>
         <h1
           className="font-serif font-light"
           style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)", lineHeight: 1.1, letterSpacing: "-0.025em", color: "var(--text-primary)" }}
         >
-          Wenhui Xu
+          {about.name}
         </h1>
         <p className="font-serif mt-1" style={{ color: "var(--text-tertiary)", fontStyle: "italic" }}>
-          Hui (Hwei) - short for Wenhui
+          {about.nickname}
         </p>
       </div>
 
@@ -60,37 +65,11 @@ export default function AboutPage() {
       <div className="pt-16 pb-16 border-b grid md:grid-cols-[1fr_280px] gap-16" style={{ borderColor: "var(--border)" }}>
         {/* Text */}
         <div className="space-y-6 font-serif" style={{ fontSize: "1.0625rem", lineHeight: 1.8, color: "var(--text-secondary)" }}>
-          <RevealSection>
-            <p>
-              As people always say: <em>"There is nothing new under the sun."</em> I research the past
-              for a thriving future. Finding a pattern from data and pulling missing pieces together
-              always fascinates me — I enjoy telling stories with numbers and talking about the lessons learned.
-            </p>
-          </RevealSection>
-          <RevealSection delay={80}>
-            <p>
-              I am proud to be a student of the first course delivery of causal machine learning at UofT,
-              led by Dr. Nazanin Khazra. With competency in Causal Inference for Business and Economic
-              settings — using Python packages including <span style={{ color: "var(--accent)" }}>EconML</span>,{" "}
-              <span style={{ color: "var(--accent)" }}>DoWhy</span>, and{" "}
-              <span style={{ color: "var(--accent)" }}>LightGBM</span> — I work on questions where the
-              difference between correlation and causation carries real consequences.
-            </p>
-          </RevealSection>
-          <RevealSection delay={160}>
-            <p>
-              I have four years of project experience across data analytics, research, business analytics,
-              and teaching. I appreciate the opportunity to ask — and attempt to answer — questions that
-              matter, while being rigorous about method.
-            </p>
-          </RevealSection>
-          <RevealSection delay={240}>
-            <p>
-              I am an interest-driven person; the thirst for knowledge drives me forward. But a more
-              pressing question: what can I do with that knowledge? I am looking for like-minded collaborators.
-              Together, we can do something different.
-            </p>
-          </RevealSection>
+          {about.bio.map((para, i) => (
+            <RevealSection key={i} delay={i * 80}>
+              <BioParagraph text={para} />
+            </RevealSection>
+          ))}
         </div>
 
         {/* Sidebar: identity + seal */}
@@ -116,14 +95,7 @@ export default function AboutPage() {
           {/* Quick facts */}
           <RevealSection delay={80}>
             <div className="space-y-4">
-              {[
-                { label: "Currently",   value: "MA, Economic Data Analytics, University of Toronto" },
-                { label: "Based in",    value: "Toronto, Canada" },
-                { label: "From",        value: "Hangzhou, China" },
-                { label: "Email",       value: "hui90785641@gmail.com", href: "mailto:hui90785641@gmail.com" },
-                { label: "GitHub",      value: "oldmercy", href: "https://github.com/oldmercy" },
-                { label: "LinkedIn",    value: "huixu01", href: "https://www.linkedin.com/in/huixu01/" },
-              ].map(({ label, value, href }) => (
+              {about.quickFacts.map(({ label, value, href }) => (
                 <div key={label}>
                   <p className="text-2xs font-sans tracking-[0.14em] uppercase mb-0.5" style={{ color: "var(--text-tertiary)" }}>
                     {label}
@@ -158,10 +130,10 @@ export default function AboutPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
             {(
               [
-                { title: "Languages",  items: skills.languages  },
-                { title: "Tools",      items: skills.tools      },
-                { title: "Libraries",  items: skills.libraries  },
-                { title: "Models",     items: skills.models     },
+                { title: "Languages",  items: about.skills.languages  },
+                { title: "Tools",      items: about.skills.tools      },
+                { title: "Libraries",  items: about.skills.libraries  },
+                { title: "Models",     items: about.skills.models     },
               ] as const
             ).map(({ title, items }) => (
               <div key={title}>
@@ -197,7 +169,7 @@ export default function AboutPage() {
           </p>
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {hobbies.map(({ emoji, label, desc }, i) => (
+            {about.hobbies.map(({ emoji, label, desc }, i) => (
               <RevealSection key={label} delay={i * 60}>
                 <div
                   className="p-6 border h-full transition-colors duration-200"

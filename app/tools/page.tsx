@@ -2,12 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useTabe } from "@/app/components/ThemeProvider";
+import { getToolsContent } from "@/lib/site-content";
 
-const DEMO_TEXT = `Causal inference has fundamentally transformed how economists evaluate complex policies. When a government introduces a new minimum wage law, researchers must determine whether observed employment changes actually result from the policy itself, or whether they reflect broader economic trends that happened to coincide with the legislation.
-
-Double Machine Learning addresses this challenge by using cross-fitting and regularised regression to partial out the influence of high-dimensional controls before estimating treatment effects. A single study using these methods can influence millions of policy decisions across dozens of jurisdictions.
-
-The core insight is deceptively simple: correlation between two variables tells us nothing about causation unless we have carefully constructed the identification strategy. Economists who understand this distinction produce research that genuinely moves the needle.`;
+const tc       = getToolsContent("en");
+const DEMO_TEXT = tc.demo.defaultText;
 
 type TaggedToken = { text: string; tag: "noun" | "verb" | "adj" | "num" | "plain"; space?: boolean };
 
@@ -44,12 +42,12 @@ function renderTagged(tokens: TaggedToken[]) {
 
 export default function ToolsPage() {
   const { tabeActive, toggleTabe } = useTabe();
-  const [tagged, setTagged] = useState<TaggedToken[] | null>(null);
+  const [tagged, setTagged]       = useState<TaggedToken[] | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [userText, setUserText] = useState(DEMO_TEXT);
-  const [editMode, setEditMode] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const hasTaggedRef = useRef(false);
+  const [userText, setUserText]   = useState(DEMO_TEXT);
+  const [editMode, setEditMode]   = useState(false);
+  const textareaRef               = useRef<HTMLTextAreaElement>(null);
+  const hasTaggedRef              = useRef(false);
 
   const processText = useCallback(async (text: string) => {
     setProcessing(true);
@@ -72,12 +70,9 @@ export default function ToolsPage() {
   }, [tabeActive, userText, processing, processText]);
 
   // handleToggle: just flip the global state — useEffect above handles NLP
-  const handleToggle = () => {
-    toggleTabe();
-  };
+  const handleToggle = () => toggleTabe();
 
   const handleApply = () => {
-    // Re-process with new text; ensure TABE is on
     processText(userText);
     if (!tabeActive) toggleTabe();
     setEditMode(false);
@@ -99,46 +94,51 @@ export default function ToolsPage() {
     <div className="max-w-5xl mx-auto px-6 pb-32">
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="pt-16 pb-12 border-b" style={{ borderColor: "var(--border)" }}>
-        <p className="text-xs font-sans tracking-[0.18em] uppercase mb-4" style={{ color: "var(--text-tertiary)" }}>
-          Open Source · Accessibility
+        <p
+          className="text-xs font-sans tracking-[0.18em] uppercase mb-4"
+          style={{ color: "var(--text-tertiary)" }}
+        >
+          {tc.page.overline}
         </p>
         <h1
           className="font-serif font-light mb-4"
-          style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)", lineHeight: 1.1, letterSpacing: "-0.025em", color: "var(--text-primary)" }}
+          style={{
+            fontSize: "clamp(2rem, 4vw, 3.25rem)",
+            lineHeight: 1.1,
+            letterSpacing: "-0.025em",
+            color: "var(--text-primary)",
+          }}
         >
-          CantRead
+          {tc.page.title}
         </h1>
         <p className="font-serif text-lg" style={{ color: "var(--text-secondary)", maxWidth: "52ch" }}>
-          For brains that bounce off walls of text. TABE (Type-Annotated Body of Evidence) colour-codes language
-          so readers can navigate dense academic prose at a glance.
+          {tc.page.subtitle}
         </p>
       </div>
 
       {/* ── What is TABE ──────────────────────────────────────── */}
       <div className="py-16 grid md:grid-cols-2 gap-12 border-b" style={{ borderColor: "var(--border)" }}>
         <div>
-          <h2 className="font-serif font-light mb-4" style={{ fontSize: "1.5rem", color: "var(--text-primary)" }}>
-            The TABE system
+          <h2
+            className="font-serif font-light mb-4"
+            style={{ fontSize: "1.5rem", color: "var(--text-primary)" }}
+          >
+            {tc.tabe.sectionTitle}
           </h2>
-          <p className="font-serif leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>
-            I developed this format while taking networking notes during job hunting. Turns out it works for
-            anyone who finds dense text hard to parse — including people with ADHD, dyslexia, or just too
-            many browser tabs open.
-          </p>
-          <p className="font-serif leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-            One consistent annotation format, applied anywhere: documents, papers, RSS feeds, PDFs.
-            The brain learns the visual grammar fast, then stops having to re-read sentences.
-          </p>
+          {tc.tabe.description.map((para, i) => (
+            <p
+              key={i}
+              className={`font-serif leading-relaxed${i > 0 ? " mt-4" : ""}`}
+              style={{ color: "var(--text-secondary)" }}
+            >
+              {para}
+            </p>
+          ))}
         </div>
 
         {/* Legend */}
         <div className="flex flex-col gap-4">
-          {[
-            { cls: "tabe-noun", label: "Bold", desc: "Nouns — the things, entities, concepts that carry the argument" },
-            { cls: "tabe-verb", label: "Yellow highlight", desc: "Verbs — the actions, states, changes that drive the sentence" },
-            { cls: "tabe-adj",  label: "Italic green", desc: "Adjectives / adverbs — modifiers you can often skim first" },
-            { cls: "tabe-num", label: "Orange", desc: "Numbers, statistics, dates — instantly scannable at a glance" },
-          ].map(({ cls, label, desc }) => (
+          {tc.tabe.legend.map(({ cls, label, desc }) => (
             <div key={cls} className="flex items-start gap-4">
               <div
                 className="shrink-0 w-8 h-8 flex items-center justify-center text-sm font-serif tabe-mode"
@@ -147,8 +147,12 @@ export default function ToolsPage() {
                 <span className={cls}>Aa</span>
               </div>
               <div>
-                <p className="text-sm font-sans font-medium" style={{ color: "var(--text-primary)" }}>{label}</p>
-                <p className="text-xs font-sans" style={{ color: "var(--text-tertiary)" }}>{desc}</p>
+                <p className="text-sm font-sans font-medium" style={{ color: "var(--text-primary)" }}>
+                  {label}
+                </p>
+                <p className="text-xs font-sans" style={{ color: "var(--text-tertiary)" }}>
+                  {desc}
+                </p>
               </div>
             </div>
           ))}
@@ -158,8 +162,11 @@ export default function ToolsPage() {
       {/* ── Live demo ─────────────────────────────────────────── */}
       <div ref={scrollRef} className="scroll-reveal pt-16">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="font-serif font-light" style={{ fontSize: "1.5rem", color: "var(--text-primary)" }}>
-            Try it live
+          <h2
+            className="font-serif font-light"
+            style={{ fontSize: "1.5rem", color: "var(--text-primary)" }}
+          >
+            {tc.demo.sectionTitle}
           </h2>
           <div className="flex items-center gap-3">
             <button
@@ -170,7 +177,7 @@ export default function ToolsPage() {
                 color: editMode ? "var(--accent)" : "var(--text-tertiary)",
               }}
             >
-              {editMode ? "Cancel" : "Paste your own text"}
+              {editMode ? tc.demo.cancelButtonLabel : tc.demo.editButtonLabel}
             </button>
 
             {/* Main toggle */}
@@ -184,9 +191,9 @@ export default function ToolsPage() {
               }}
             >
               {processing ? (
-                <><SpinnerIcon /> Processing…</>
+                <><SpinnerIcon /> {tc.demo.processingLabel}</>
               ) : (
-                <>{tabeActive ? "TABE On" : "Enable TABE"}</>
+                <>{tabeActive ? tc.demo.onLabel : tc.demo.enableLabel}</>
               )}
             </button>
           </div>
@@ -214,7 +221,7 @@ export default function ToolsPage() {
                 className="text-xs font-sans px-4 py-2 transition-colors duration-150"
                 style={{ backgroundColor: "var(--accent)", color: "#fff" }}
               >
-                Apply TABE →
+                {tc.demo.applyLabel}
               </button>
             </div>
           </div>
@@ -253,10 +260,10 @@ export default function ToolsPage() {
                 </p>
               );
             }
-            const total = tagged.length;
-            const paras = userText.split("\n\n").length;
+            const total   = tagged.length;
+            const paras   = userText.split("\n\n").length;
             const perPara = Math.ceil(total / paras);
-            const slice = tagged.filter((_, i) => i >= pi * perPara && i < (pi + 1) * perPara);
+            const slice   = tagged.filter((_, i) => i >= pi * perPara && i < (pi + 1) * perPara);
             return (
               <p key={pi} className={pi > 0 ? "mt-6" : ""}>
                 {renderTagged(slice)}
@@ -267,30 +274,46 @@ export default function ToolsPage() {
 
         <p className="text-xs font-sans mt-3" style={{ color: "var(--text-tertiary)" }}>
           Powered by{" "}
-          <a href="https://github.com/spencermountain/compromise" target="_blank" rel="noopener noreferrer" className="link-underline" style={{ color: "var(--accent)" }}>
-            compromise.js
+          <a
+            href={tc.demo.poweredByHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="link-underline"
+            style={{ color: "var(--accent)" }}
+          >
+            {tc.demo.poweredBy}
           </a>{" "}
-          — NLP runs entirely in your browser, nothing is sent to a server.
+          — {tc.demo.poweredByNote}
         </p>
       </div>
 
       {/* ── Integration in papers ─────────────────────────────── */}
       <div className="mt-20 pt-10 border-t" style={{ borderColor: "var(--border)" }}>
-        <p className="text-xs font-sans tracking-[0.18em] uppercase mb-3" style={{ color: "var(--text-tertiary)" }}>
-          Integrated throughout this site
+        <p
+          className="text-xs font-sans tracking-[0.18em] uppercase mb-3"
+          style={{ color: "var(--text-tertiary)" }}
+        >
+          {tc.integration.overline}
         </p>
         <p className="font-serif" style={{ color: "var(--text-secondary)", maxWidth: "52ch" }}>
-          Every paper on this site has a{" "}
-          <span style={{ color: "var(--accent)", fontStyle: "italic" }}>Reading mode</span> button in the header.
-          Toggle it on any paper to activate TABE — the NLP runs locally in your browser.
+          {tc.integration.body.split("Reading mode").map((part, i, arr) =>
+            i < arr.length - 1 ? (
+              <span key={i}>
+                {part}
+                <span style={{ color: "var(--accent)", fontStyle: "italic" }}>Reading mode</span>
+              </span>
+            ) : (
+              <span key={i}>{part}</span>
+            )
+          )}
         </p>
         <div className="mt-4">
           <a
-            href="/writing"
+            href={tc.integration.linkHref}
             className="text-sm link-underline"
             style={{ color: "var(--accent)" }}
           >
-            Browse papers →
+            {tc.integration.linkLabel}
           </a>
         </div>
       </div>
@@ -308,19 +331,20 @@ export default function ToolsPage() {
             <GitHubIcon />
           </div>
           <div>
-            <p className="font-serif text-lg mb-1" style={{ color: "var(--text-primary)" }}>Open source</p>
+            <p className="font-serif text-lg mb-1" style={{ color: "var(--text-primary)" }}>
+              {tc.openSource.title}
+            </p>
             <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
-              CantRead is open source. Contributions especially welcome for non-English language support
-              and dictionary expansions.
+              {tc.openSource.body}
             </p>
             <a
-              href="https://github.com/oldmercy/CantRead"
+              href={tc.openSource.linkHref}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm link-underline"
               style={{ color: "var(--accent)" }}
             >
-              github.com/oldmercy/CantRead →
+              {tc.openSource.linkLabel}
             </a>
           </div>
         </div>

@@ -3,6 +3,17 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { useTheme } from "./components/ThemeProvider";
+import { getSiteContent } from "@/lib/site-content";
+import { getToolsContent } from "@/lib/site-content";
+import { getFeaturedPaper } from "@/lib/papers";
+
+const c        = getSiteContent("en");
+const hero     = c.home.hero;
+const stats    = c.home.stats;
+const sections = c.home;
+const featured = getFeaturedPaper("en");
+const tc       = getToolsContent("en");
+const teaser   = tc.homeTeaser;
 
 export default function Home() {
   const { theme } = useTheme();
@@ -44,10 +55,10 @@ export default function Home() {
             className="text-xs font-sans tracking-[0.18em] uppercase mb-6 animate-fade-up"
             style={{ color: "var(--text-tertiary)", animationDelay: "0ms" }}
           >
-            Economist
+            {hero.overline}
           </p>
 
-          {/* Headline */}
+          {/* Headline — accent word is driven by content */}
           <h1
             className="font-serif font-light mb-8 animate-fade-up"
             style={{
@@ -58,11 +69,11 @@ export default function Home() {
               animationDelay: "80ms",
             }}
           >
-            I research the past{" "}
+            {hero.headline.replace(hero.headlineAccent, "").trimEnd()}{" "}
             <br className="hidden sm:block" />
-            for a{" "}
+            {hero.headline.includes("for a") && "for a "}
             <span style={{ color: "var(--accent)", fontStyle: "italic", fontWeight: 400 }}>
-              thriving future.
+              {hero.headlineAccent}
             </span>
           </h1>
 
@@ -71,14 +82,13 @@ export default function Home() {
             className="font-serif text-lg leading-relaxed mb-10 animate-fade-up"
             style={{ color: "var(--text-secondary)", maxWidth: "44ch", animationDelay: "160ms" }}
           >
-            Wenhui (Hwei) Xu — MA student in Economic Data Analytics at the{" "}
-            University of Toronto. I find patterns in data, estimate causes, and tell stories with numbers.
+            {hero.body}
           </p>
 
           {/* CTA row */}
           <div className="flex flex-wrap gap-4 mb-16 animate-fade-up" style={{ animationDelay: "240ms" }}>
             <Link
-              href="/writing"
+              href={hero.cta.primary.href}
               className="inline-flex items-center gap-2 px-6 py-3 text-sm font-sans tracking-wide transition-all duration-200 rounded-none"
               style={{
                 backgroundColor: "var(--text-primary)",
@@ -91,11 +101,11 @@ export default function Home() {
                 (e.currentTarget as HTMLElement).style.backgroundColor = "var(--text-primary)";
               }}
             >
-              Read my writing
+              {hero.cta.primary.label}
               <ArrowRight />
             </Link>
             <a
-              href="mailto:hui90785641@gmail.com"
+              href={hero.cta.secondary.href}
               className="inline-flex items-center gap-2 px-6 py-3 text-sm font-sans tracking-wide transition-all duration-200 border"
               style={{
                 borderColor: "var(--border-strong)",
@@ -110,7 +120,7 @@ export default function Home() {
                 (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)";
               }}
             >
-              Get in touch
+              {hero.cta.secondary.label}
             </a>
           </div>
 
@@ -122,12 +132,7 @@ export default function Home() {
             className="flex flex-wrap gap-x-10 gap-y-4 mt-8 animate-fade-up"
             style={{ animationDelay: "360ms" }}
           >
-            {[
-              { num: "3",        label: "Published papers" },
-              { num: "4 yrs",   label: "Research experience" },
-              { num: "Toronto", label: "Based in" },
-              { num: "Hangzhou",label: "Originally from" },
-            ].map(({ num, label }) => (
+            {stats.map(({ value: num, label }) => (
               <div key={label}>
                 <p className="font-serif text-2xl font-light" style={{ color: "var(--text-primary)" }}>{num}</p>
                 <p className="text-xs tracking-wide mt-0.5" style={{ color: "var(--text-tertiary)" }}>{label}</p>
@@ -176,15 +181,15 @@ function FeaturedTeaser() {
     <section className="px-6 max-w-5xl mx-auto py-24 scroll-reveal" ref={ref}>
       <div className="flex items-baseline justify-between mb-8">
         <p className="text-xs font-sans tracking-[0.18em] uppercase" style={{ color: "var(--text-tertiary)" }}>
-          Latest Writing
+          {sections.writingSection.label}
         </p>
         <Link href="/writing" className="text-sm link-underline" style={{ color: "var(--accent)" }}>
-          All papers →
+          {sections.writingSection.allLabel}
         </Link>
       </div>
 
       <Link
-        href="/writing/causal-inference-business"
+        href={`/writing/${featured.slug}`}
         className="group block border transition-colors duration-200"
         style={{ borderColor: "var(--border)" }}
         onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
@@ -195,20 +200,20 @@ function FeaturedTeaser() {
           <div className="p-8 md:p-12">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-2xs font-sans tracking-[0.15em] uppercase px-2 py-0.5" style={{ backgroundColor: "var(--bg-subtle)", color: "var(--text-tertiary)" }}>
-                Economic Research
+                {featured.category}
               </span>
-              <span className="text-2xs" style={{ color: "var(--text-tertiary)" }}>2024</span>
+              <span className="text-2xs" style={{ color: "var(--text-tertiary)" }}>{featured.year}</span>
             </div>
 
             <h2
               className="font-serif font-light mb-4 group-hover:text-[var(--accent)] transition-colors duration-200"
               style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)", lineHeight: 1.15, letterSpacing: "-0.02em", color: "var(--text-primary)" }}
             >
-              Causal Inference in Business &amp; Economic Settings
+              {featured.title}
             </h2>
 
             <p className="font-serif text-base leading-relaxed mb-6" style={{ color: "var(--text-secondary)", maxWidth: "54ch" }}>
-              Double Machine Learning, Generalized Random Forests, and the DoWhy framework as tools for economic policy evaluation — moving beyond correlation to rigorous business decisions.
+              {featured.abstract}
             </p>
 
             <div className="flex items-center gap-2 text-sm" style={{ color: "var(--accent)" }}>
@@ -223,7 +228,7 @@ function FeaturedTeaser() {
             style={{ backgroundColor: "var(--bg-subtle)" }}
           >
             <img
-              src="/Eco/2_img.png"
+              src={featured.coverImage}
               alt="Paper cover thumbnail"
               className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
@@ -254,29 +259,29 @@ function ToolsTeaser() {
       <div className="grid md:grid-cols-2 gap-12 items-center">
         <div>
           <p className="text-xs font-sans tracking-[0.18em] uppercase mb-4" style={{ color: "var(--text-tertiary)" }}>
-            Open Source Tool
+            {sections.toolsSection.label}
           </p>
           <h2
             className="font-serif font-light mb-4"
             style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", lineHeight: 1.2, letterSpacing: "-0.02em", color: "var(--text-primary)" }}
           >
-            CantRead — accessible reading for brains that bounce off walls of text
+            {teaser.title}
           </h2>
           <p className="font-serif leading-relaxed mb-6" style={{ color: "var(--text-secondary)" }}>
-            TABE (Type-Annotated Body of Evidence) marks nouns bold, verbs highlighted, adjectives italic, and numbers orange — a reading format I developed while taking networking notes that turned out to work for everyone.
+            {teaser.body}
           </p>
-          <Link href="/tools" className="text-sm link-underline" style={{ color: "var(--accent)" }}>
-            Try it live →
+          <Link href={teaser.linkHref} className="text-sm link-underline" style={{ color: "var(--accent)" }}>
+            {teaser.linkLabel}
           </Link>
         </div>
 
-        {/* Mini TABE demo */}
+        {/* Mini TABE demo — static preview, always "on" visually */}
         <div
           className="p-6 border font-serif text-base leading-relaxed tabe-mode"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
         >
           <p className="text-2xs tracking-[0.15em] uppercase mb-4 font-sans" style={{ color: "var(--text-tertiary)" }}>
-            TABE Reading Mode — preview
+            {teaser.previewLabel}
           </p>
           <p>
             <span className="tabe-noun">Causal inference</span>{" "}

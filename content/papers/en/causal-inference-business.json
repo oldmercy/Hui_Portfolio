@@ -1,0 +1,46 @@
+{
+  "slug": "causal-inference-business",
+  "title": "Causal Inference in Business & Economic Settings",
+  "category": "Economic Research",
+  "year": 2024,
+  "abstract": "An applied investigation into causal machine learning methods — Double Machine Learning, Generalized Random Forests, and the DoWhy framework — as tools for economic policy evaluation. Drawing on UofT's first delivery of the Causal ML course under Dr. Nazanin Khazra, this paper demonstrates how treatment effect estimation can move beyond correlation to support rigorous business decisions.",
+  "tags": ["Causal Inference", "Double ML", "EconML", "Policy Evaluation"],
+  "readingTime": 28,
+  "featured": true,
+  "coverImage": "/Eco/2_img.png",
+  "pdfPath": "/Eco/2.pdf",
+  "body": [
+    {
+      "type": "section",
+      "heading": "Introduction",
+      "paragraphs": [
+        "Causal inference has long been the province of academic economists and epidemiologists — fields where the difference between correlation and causation carries enormous consequence. In recent years, a new generation of tools has brought this rigour into business analytics and applied data science. This paper examines how methods from the causal ML literature can be deployed in a corporate setting.",
+        "The central question we address is deceptively simple: when a firm changes a policy, does the policy change cause the observed outcome, or is the observed outcome the result of confounding factors that happened to coincide with the policy change? Answering this question correctly is the difference between evidence-based management and expensive coincidence."
+      ]
+    },
+    {
+      "type": "section",
+      "heading": "Methodology",
+      "paragraphs": [
+        "We draw primarily on three methodological pillars. First, Double Machine Learning (DML), introduced by Chernozhukov et al. (2018), which uses cross-fitting and regularised regression to partial out the influence of high-dimensional controls before estimating treatment effects. Second, Generalized Random Forests (GRF) for heterogeneous treatment effect estimation, allowing us to understand which sub-populations benefit most from a given policy. Third, the DoWhy causal graph framework, which forces explicit declaration of modelling assumptions before any estimation takes place.",
+        "Data was sourced from a combination of synthetic experiments and publicly available economic panel datasets. All estimation was performed in Python using the EconML, DoWhy, and GRF (via rpy2 bridge) libraries."
+      ]
+    },
+    {
+      "type": "section",
+      "heading": "Results & Discussion",
+      "paragraphs": [
+        "Our core finding is that naive OLS estimates of treatment effects in the presence of selection bias are systematically overstated by a median factor of 1.4 across the scenarios we examined. DML estimates, by contrast, were within 8% of the ground-truth treatment effects in synthetic experiments designed to have known answers.",
+        "Heterogeneous treatment effect analysis revealed meaningful sub-group variation: policy effects that appeared null on average masked positive effects for one sub-group and negative effects for another. This finding has direct implications for targeted intervention design in business contexts.",
+        "The DoWhy framework proved its value not in the estimation phase but in the assumption-declaration phase: making the DAG explicit three times forced us to identify a previously overlooked backdoor path in our original specification, which would have biased estimates in the naive approach."
+      ]
+    },
+    {
+      "type": "section",
+      "heading": "Conclusion",
+      "paragraphs": [
+        "Causal machine learning methods are now mature enough for routine deployment in business analytics. The key bottleneck is not computational — modern Python libraries handle the estimation efficiently — but conceptual: practitioners must develop the habit of drawing the causal graph before reaching for the regression. We hope this paper serves as a practical bridge between academic causal inference literature and applied economic data science."
+      ]
+    }
+  ]
+}

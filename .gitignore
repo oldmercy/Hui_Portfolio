@@ -34,4 +34,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-public/projects.json.idea/
+public/projects.json
+# IDE
+.idea/
+*.iml

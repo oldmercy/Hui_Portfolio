@@ -1,0 +1,38 @@
+{
+  "slug": "business-analytics-consumer-behaviour",
+  "title": "Consumer Behaviour Analytics: A Machine Learning Approach",
+  "category": "Business Analytics",
+  "year": 2023,
+  "abstract": "Applying gradient boosting, classification trees, and Shapley value decomposition to a retail dataset to identify drivers of customer churn and lifetime value. The paper demonstrates how interpretable ML methods can bridge the gap between predictive accuracy and actionable business insight.",
+  "tags": ["Machine Learning", "Consumer Behaviour", "SHAP", "LightGBM"],
+  "readingTime": 18,
+  "featured": false,
+  "coverImage": "/Biz/1_img.png",
+  "pdfPath": "/Biz/1.pdf",
+  "body": [
+    {
+      "type": "section",
+      "heading": "Introduction",
+      "paragraphs": [
+        "Customer churn prediction is one of the oldest problems in applied machine learning, yet it remains perpetually relevant because the cost of customer acquisition routinely exceeds the cost of retention by an order of magnitude. This paper applies modern gradient boosting methods to a retail transaction dataset, with particular attention to model interpretability via Shapley value decomposition.",
+        "Our contribution is methodological as much as empirical: we demonstrate a workflow that moves from raw transaction data to actionable segmentation and targeted intervention recommendations, preserving interpretability at every step."
+      ]
+    },
+    {
+      "type": "section",
+      "heading": "Data & Feature Engineering",
+      "paragraphs": [
+        "The dataset comprises 18 months of transaction records from a mid-size Canadian retailer, covering approximately 240,000 unique customers. Features were engineered using RFM (Recency, Frequency, Monetary Value) decomposition, supplemented with behavioural features including product category diversity, inter-purchase time variability, and promotional sensitivity.",
+        "Class imbalance — churn events constituted approximately 8% of the sample — was addressed via stratified sampling and class-weight adjustment rather than synthetic oversampling, to preserve the real distributional properties of the churn event."
+      ]
+    },
+    {
+      "type": "section",
+      "heading": "Model Results",
+      "paragraphs": [
+        "LightGBM achieved an AUC-ROC of 0.847 on the held-out test set, compared to 0.791 for logistic regression baseline. More importantly, SHAP decomposition revealed that recency alone accounted for 41% of total feature importance — a finding with immediate operational consequence: the highest-leverage intervention is re-engagement within the first 45 days of inactivity.",
+        "Cluster analysis of SHAP interaction effects identified three distinct churn archetypes: price-sensitive defectors (responsive to discount offers), life-event churners (non-recoverable without product category extension), and disengaged loyalists (recoverable through personalised communication). Each archetype requires a different retention strategy."
+      ]
+    }
+  ]
+}

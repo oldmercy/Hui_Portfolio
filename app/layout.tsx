@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "./components/nav/Navbar";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { getSiteContent } from "@/lib/site-content";
+
+const { metadata: meta, footer } = getSiteContent("en");
 
 export const metadata: Metadata = {
-  title: "Wenhui Xu — Economist & Data Scientist",
-  description:
-    "Writing samples, research, and tools by Wenhui Xu — Economist and Data Scientist based in Toronto.",
+  title: meta.title,
+  description: meta.description,
   openGraph: {
-    title: "Wenhui Xu",
-    description: "Economist & Data Scientist based in Toronto.",
+    title: meta.ogTitle,
+    description: meta.ogDescription,
     type: "website",
   },
 };
@@ -36,15 +38,23 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>
+      <body
+        className="min-h-screen flex flex-col"
+        style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}
+      >
         <ThemeProvider>
           <Navbar />
           <main className="flex-1">{children}</main>
-          <footer className="border-t py-10 px-6 mt-24" style={{ borderColor: "var(--border)" }}>
+
+          <footer
+            className="border-t py-10 px-6 mt-24"
+            style={{ borderColor: "var(--border)" }}
+          >
             <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-start gap-4">
+              {/* Left: copyright + credits */}
               <div>
                 <p className="font-serif text-sm" style={{ color: "var(--text-secondary)" }}>
-                  © 2024 Wenhui Xu
+                  {footer.copyright}
                 </p>
                 <p className="text-xs mt-1" style={{ color: "var(--text-tertiary)" }}>
                   Reading experience powered by{" "}
@@ -69,10 +79,20 @@ export default function RootLayout({
                   </a>
                 </p>
               </div>
+
+              {/* Right: social links from content */}
               <div className="flex gap-6 text-sm" style={{ color: "var(--text-secondary)" }}>
-                <a href="https://github.com/oldmercy" target="_blank" rel="noopener noreferrer" className="link-underline hover:text-[var(--accent)] transition-colors">GitHub</a>
-                <a href="https://www.linkedin.com/in/huixu01/" target="_blank" rel="noopener noreferrer" className="link-underline hover:text-[var(--accent)] transition-colors">LinkedIn</a>
-                <a href="mailto:hui90785641@gmail.com" className="link-underline hover:text-[var(--accent)] transition-colors">Email</a>
+                {footer.links.map(({ label, href }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target={href.startsWith("http") ? "_blank" : undefined}
+                    rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
+                    className="link-underline hover:text-[var(--accent)] transition-colors"
+                  >
+                    {label}
+                  </a>
+                ))}
               </div>
             </div>
           </footer>
