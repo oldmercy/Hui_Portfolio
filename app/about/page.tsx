@@ -120,6 +120,52 @@ export default function AboutPage() {
         </div>
       </div>
 
+      {/* ── Approach ───────────────────────────────────────────── */}
+      <RevealSection>
+        <section className="pt-16 pb-16 border-b" style={{ borderColor: "var(--border)" }}>
+          <p className="text-xs font-sans tracking-[0.18em] uppercase mb-10" style={{ color: "var(--text-tertiary)" }}>
+            How I Work
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-5">
+            {(
+              [
+                { title: "Evidence Synthesis", items: about.approach.evidence },
+                { title: "Applied Analysis", items: about.approach.analysis },
+                { title: "Decision Communication", items: about.approach.communication },
+                { title: "Workflow Systems", items: about.approach.systems },
+              ] as const
+            ).map(({ title, items }) => (
+              <div
+                key={title}
+                className="border p-6 transition-colors duration-200"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", boxShadow: "0 14px 50px rgba(21, 24, 23, 0.035)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+              >
+                <h3
+                  className="font-serif font-light mb-4"
+                  style={{ color: "var(--text-primary)", fontSize: "1.35rem", lineHeight: 1.15 }}
+                >
+                  {title}
+                </h3>
+                <ul className="flex flex-wrap gap-2">
+                  {items.map((item) => (
+                    <li
+                      key={item}
+                      className="text-2xs font-sans tracking-wide px-2 py-1 border"
+                      style={{ color: "var(--text-secondary)", borderColor: "var(--border)", backgroundColor: "color-mix(in srgb, var(--surface) 80%, var(--bg-subtle))" }}
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      </RevealSection>
+
       {/* ── Skills ─────────────────────────────────────────────── */}
       <RevealSection>
         <section className="pt-16 pb-16 border-b" style={{ borderColor: "var(--border)" }}>
@@ -127,30 +173,33 @@ export default function AboutPage() {
             Technical Skills
           </p>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
+          <div className="grid gap-6">
             {(
               [
                 { title: "Languages",  items: about.skills.languages  },
                 { title: "Tools",      items: about.skills.tools      },
                 { title: "Libraries",  items: about.skills.libraries  },
-                { title: "Models",     items: about.skills.models     },
+                { title: "Methods & Models", items: about.skills.models },
               ] as const
             ).map(({ title, items }) => (
-              <div key={title}>
+              <div
+                key={title}
+                className="grid md:grid-cols-[160px_1fr] gap-4 border-b pb-5"
+                style={{ borderColor: "var(--border)" }}
+              >
                 <h3
-                  className="font-serif text-sm mb-4 pb-2 border-b"
-                  style={{ color: "var(--text-primary)", borderColor: "var(--border)" }}
+                  className="font-serif text-base"
+                  style={{ color: "var(--text-primary)" }}
                 >
                   {title}
                 </h3>
-                <ul className="space-y-1.5">
+                <ul className="flex flex-wrap gap-2">
                   {items.map((item) => (
                     <li
                       key={item}
-                      className="flex items-start gap-2 text-sm font-sans"
-                      style={{ color: "var(--text-secondary)" }}
+                      className="text-xs font-sans px-2.5 py-1 border"
+                      style={{ color: "var(--text-secondary)", borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
                     >
-                      <span style={{ color: "var(--accent)", marginTop: "0.35em", flexShrink: 0 }}>—</span>
                       {item}
                     </li>
                   ))}
@@ -168,17 +217,14 @@ export default function AboutPage() {
             Outside the Office
           </p>
 
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {about.hobbies.map(({ emoji, label, desc }, i) => (
+          <div className="grid md:grid-cols-2 gap-x-10 gap-y-0 border-t" style={{ borderColor: "var(--border)" }}>
+            {about.hobbies.map(({ label, desc }, i) => (
               <RevealSection key={label} delay={i * 60}>
                 <div
-                  className="p-6 border h-full transition-colors duration-200"
-                  style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--border-strong)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+                  className="py-6 border-b"
+                  style={{ borderColor: "var(--border)" }}
                 >
-                  <div className="text-2xl mb-3">{emoji}</div>
-                  <h4 className="font-serif text-base mb-2" style={{ color: "var(--text-primary)" }}>
+                  <h4 className="font-serif text-lg mb-2" style={{ color: "var(--text-primary)" }}>
                     {label}
                   </h4>
                   <p className="text-sm font-sans leading-relaxed" style={{ color: "var(--text-secondary)" }}>

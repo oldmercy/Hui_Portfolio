@@ -14,6 +14,7 @@ const sections = c.home;
 const featured = getFeaturedPaper("en");
 const tc       = getToolsContent("en");
 const teaser   = tc.homeTeaser;
+const headlineLead = hero.headline.replace(hero.headlineAccent, "").trimEnd();
 
 export default function Home() {
   const { theme } = useTheme();
@@ -34,22 +35,22 @@ export default function Home() {
   return (
     <div className="relative overflow-x-hidden">
       {/* ── Hero ──────────────────────────────────────────────── */}
-      <section className="relative min-h-[92vh] flex flex-col justify-center px-6 max-w-5xl mx-auto">
+      <section className="relative min-h-[100svh] flex flex-col justify-center px-6 py-20 md:py-24 max-w-5xl mx-auto">
         {/* Large calligraphy watermark behind content */}
         <div
           ref={heroRef}
           className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none select-none"
           aria-hidden="true"
-          style={{ opacity: theme === "dark" ? 0.07 : 0.06 }}
+          style={{ opacity: theme === "dark" ? 0.055 : 0.045 }}
         >
           <img
             src="/hui_calligraphy_CDW_full.png"
             alt=""
-            style={{ height: "min(80vh, 640px)", width: "auto", filter: theme === "dark" ? "invert(1)" : "none" }}
+            style={{ height: "min(72vh, 560px)", width: "auto", filter: theme === "dark" ? "invert(1)" : "none" }}
           />
         </div>
 
-        <div className="relative z-10 max-w-[46rem]">
+        <div className="relative z-10 max-w-[58rem]">
           {/* Overline */}
           <p
             className="text-xs font-sans tracking-[0.18em] uppercase mb-6 animate-fade-up"
@@ -62,16 +63,14 @@ export default function Home() {
           <h1
             className="font-serif font-light mb-8 animate-fade-up"
             style={{
-              fontSize: "clamp(2.6rem, 5.5vw, 4.2rem)",
-              lineHeight: 1.08,
+              fontSize: "clamp(2.7rem, 5vw, 4.6rem)",
+              lineHeight: 1.02,
               letterSpacing: "-0.03em",
               color: "var(--text-primary)",
               animationDelay: "80ms",
             }}
           >
-            {hero.headline.replace(hero.headlineAccent, "").trimEnd()}{" "}
-            <br className="hidden sm:block" />
-            {hero.headline.includes("for a") && "for a "}
+            {headlineLead}{" "}
             <span style={{ color: "var(--accent)", fontStyle: "italic", fontWeight: 400 }}>
               {hero.headlineAccent}
             </span>
@@ -80,7 +79,7 @@ export default function Home() {
           {/* Body */}
           <p
             className="font-serif text-lg leading-relaxed mb-10 animate-fade-up"
-            style={{ color: "var(--text-secondary)", maxWidth: "44ch", animationDelay: "160ms" }}
+            style={{ color: "var(--text-secondary)", maxWidth: "48ch", animationDelay: "160ms" }}
           >
             {hero.body}
           </p>
@@ -129,31 +128,37 @@ export default function Home() {
 
           {/* Quick stats */}
           <div
-            className="flex flex-wrap gap-x-10 gap-y-4 mt-8 animate-fade-up"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-7 mt-8 animate-fade-up"
             style={{ animationDelay: "360ms" }}
           >
             {stats.map(({ value: num, label }) => (
               <div key={label}>
-                <p className="font-serif text-2xl font-light" style={{ color: "var(--text-primary)" }}>{num}</p>
-                <p className="text-xs tracking-wide mt-0.5" style={{ color: "var(--text-tertiary)" }}>{label}</p>
+                <p className="font-serif text-[1.7rem] leading-none font-light" style={{ color: "var(--text-primary)" }}>{num}</p>
+                <p className="text-xs leading-snug mt-2" style={{ color: "var(--text-tertiary)" }}>{label}</p>
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Scroll indicator */}
-        <div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-fade-in"
-          style={{ animationDelay: "800ms", color: "var(--text-tertiary)" }}
-          aria-hidden="true"
-        >
-          <span className="text-2xs tracking-[0.2em] uppercase">Scroll</span>
-          <ChevronDown />
+          {/* Scroll indicator */}
+          <div
+            className="mt-10 hidden md:flex flex-col items-center gap-2 animate-fade-in"
+            style={{ animationDelay: "800ms", color: "var(--text-tertiary)" }}
+            aria-hidden="true"
+          >
+            <span className="text-2xs tracking-[0.2em] uppercase">Scroll</span>
+            <ChevronDown />
+          </div>
         </div>
       </section>
 
       {/* ── Featured paper teaser ──────────────────────────────── */}
       <FeaturedTeaser />
+
+      {/* ── Teaching teaser ────────────────────────────────────── */}
+      <TeachingTeaser />
+
+      {/* ── Applied public analysis teaser ─────────────────────── */}
+      <BedtTeaser />
 
       {/* ── Tools teaser ──────────────────────────────────────── */}
       <ToolsTeaser />
@@ -178,7 +183,7 @@ function FeaturedTeaser() {
   }, []);
 
   return (
-    <section className="px-6 max-w-5xl mx-auto py-24 scroll-reveal" ref={ref}>
+    <section className="px-6 max-w-5xl mx-auto pt-24 pb-14 scroll-reveal" ref={ref}>
       <div className="flex items-baseline justify-between mb-8">
         <p className="text-xs font-sans tracking-[0.18em] uppercase" style={{ color: "var(--text-tertiary)" }}>
           {sections.writingSection.label}
@@ -191,18 +196,18 @@ function FeaturedTeaser() {
       <Link
         href={`/writing/${featured.slug}`}
         className="group block border transition-colors duration-200"
-        style={{ borderColor: "var(--border)" }}
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", boxShadow: "0 18px 60px rgba(21, 24, 23, 0.04)" }}
         onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
         onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
       >
         <div className="grid md:grid-cols-[1fr_auto] gap-0">
           {/* Left: text */}
           <div className="p-8 md:p-12">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-2xs font-sans tracking-[0.15em] uppercase px-2 py-0.5" style={{ backgroundColor: "var(--bg-subtle)", color: "var(--text-tertiary)" }}>
-                {featured.category}
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <span className="text-2xs font-sans tracking-[0.15em] uppercase px-2 py-0.5" style={{ backgroundColor: "color-mix(in srgb, var(--accent) 10%, var(--surface))", color: "var(--accent)" }}>
+                Method-Rigorous Analysis
               </span>
-              <span className="text-2xs" style={{ color: "var(--text-tertiary)" }}>{featured.year}</span>
+              <span className="text-2xs" style={{ color: "var(--text-tertiary)" }}>{featured.category} · {featured.year}</span>
             </div>
 
             <h2
@@ -239,6 +244,155 @@ function FeaturedTeaser() {
   );
 }
 
+function TeachingTeaser() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.isIntersecting && el.classList.add("visible")),
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section className="px-6 max-w-5xl mx-auto pb-14 scroll-reveal" ref={ref}>
+      <Link
+        href="/teaching"
+        className="group block border transition-colors duration-200 overflow-hidden"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", boxShadow: "0 18px 60px rgba(21, 24, 23, 0.04)" }}
+        onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
+        onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+      >
+        <div className="grid md:grid-cols-[1fr_auto] gap-0">
+          <div className="p-8 md:p-12">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <span className="text-2xs font-sans tracking-[0.15em] uppercase px-2 py-0.5" style={{ backgroundColor: "color-mix(in srgb, var(--accent) 10%, var(--surface))", color: "var(--accent)" }}>
+                Decision-Ready Communication
+              </span>
+              <span className="text-2xs" style={{ color: "var(--text-tertiary)" }}>4 Terms · Stata/R</span>
+            </div>
+
+            <h2
+              className="font-serif font-light mb-4 group-hover:text-[var(--accent)] transition-colors duration-200"
+              style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)", lineHeight: 1.15, letterSpacing: "-0.02em", color: "var(--text-primary)" }}
+            >
+              Econometrics Teaching Materials
+            </h2>
+
+            <p className="font-serif text-base leading-relaxed mb-6" style={{ color: "var(--text-secondary)", maxWidth: "54ch" }}>
+              Tutorial flows, worked examples, and Stata/R demos designed to help mixed-background students move from econometric theory to implementation-ready workflows.
+            </p>
+
+            <div className="flex items-center gap-2 text-sm" style={{ color: "var(--accent)" }}>
+              <span>View Teaching Materials</span>
+              <ArrowRight />
+            </div>
+          </div>
+
+          <div
+            className="hidden md:flex w-56 lg:w-72 items-center justify-center p-8"
+            style={{ backgroundColor: "var(--bg-hover)" }}
+          >
+            <div className="font-serif text-center" style={{ color: "var(--text-primary)" }}>
+              <p className="text-5xl font-light leading-none">ECO</p>
+              <p className="mt-3 text-xs font-sans tracking-[0.18em] uppercase" style={{ color: "var(--text-tertiary)" }}>
+                Teaching
+              </p>
+            </div>
+          </div>
+        </div>
+      </Link>
+    </section>
+  );
+}
+
+function BedtTeaser() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.isIntersecting && el.classList.add("visible")),
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section className="px-6 max-w-5xl mx-auto pb-14 scroll-reveal" ref={ref}>
+      <div
+        className="group block border transition-colors duration-200"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", boxShadow: "0 18px 60px rgba(21, 24, 23, 0.04)" }}
+        onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
+        onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+      >
+        <div className="grid md:grid-cols-[1fr_auto] gap-0">
+          <div className="p-8 md:p-12">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <span className="text-2xs font-sans tracking-[0.15em] uppercase px-2 py-0.5" style={{ backgroundColor: "color-mix(in srgb, var(--accent) 10%, var(--surface))", color: "var(--accent)" }}>
+                Evidence-Based Applied Analysis
+              </span>
+              <span className="text-2xs" style={{ color: "var(--text-tertiary)" }}>Public Profiles</span>
+            </div>
+
+            <h2
+              className="font-serif font-light mb-4 group-hover:text-[var(--accent)] transition-colors duration-200"
+              style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)", lineHeight: 1.15, letterSpacing: "-0.02em", color: "var(--text-primary)" }}
+            >
+              Municipal Economic Profiles
+            </h2>
+
+            <p className="font-serif text-base leading-relaxed mb-6" style={{ color: "var(--text-secondary)", maxWidth: "54ch" }}>
+              Public-facing economic and labour-market profiles that translate business, demographic, and talent indicators into stakeholder-ready municipal analysis.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+              <a
+                href="/Work/BEDT/competitive-business-profile-2024.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="link-underline"
+                style={{ color: "var(--accent)" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                Competitive Business Profile
+              </a>
+              <a
+                href="/Work/BEDT/labour-talent-pool-data-profile.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="link-underline"
+                style={{ color: "var(--accent)" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                Labour & Talent Pool Profile
+              </a>
+            </div>
+          </div>
+
+          <div
+            className="hidden md:flex w-56 lg:w-72 items-center justify-center p-8"
+            style={{ backgroundColor: "var(--bg-hover)" }}
+          >
+            <div className="font-serif text-center" style={{ color: "var(--text-primary)" }}>
+              <p className="text-5xl font-light leading-none">BEDT</p>
+              <p className="mt-3 text-xs font-sans tracking-[0.18em] uppercase" style={{ color: "var(--text-tertiary)" }}>
+                Public Analysis
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ToolsTeaser() {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -255,30 +409,43 @@ function ToolsTeaser() {
 
   return (
     <section className="px-6 max-w-5xl mx-auto pb-32 scroll-reveal" ref={ref}>
-      <span className="sp-rule mb-16 block" />
-      <div className="grid md:grid-cols-2 gap-12 items-center">
-        <div>
-          <p className="text-xs font-sans tracking-[0.18em] uppercase mb-4" style={{ color: "var(--text-tertiary)" }}>
-            {sections.toolsSection.label}
-          </p>
+      <Link
+        href={teaser.linkHref}
+        className="group block border transition-colors duration-200"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)", boxShadow: "0 18px 60px rgba(21, 24, 23, 0.04)" }}
+        onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
+        onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+      >
+        <div className="grid md:grid-cols-[1fr_auto] gap-0">
+          <div className="p-8 md:p-12">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <span className="text-2xs font-sans tracking-[0.15em] uppercase px-2 py-0.5" style={{ backgroundColor: "color-mix(in srgb, var(--accent) 10%, var(--surface))", color: "var(--accent)" }}>
+                {sections.toolsSection.label}
+              </span>
+              <span className="text-2xs" style={{ color: "var(--text-tertiary)" }}>Open Source Tool</span>
+            </div>
+
           <h2
-            className="font-serif font-light mb-4"
-            style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", lineHeight: 1.2, letterSpacing: "-0.02em", color: "var(--text-primary)" }}
+            className="font-serif font-light mb-4 group-hover:text-[var(--accent)] transition-colors duration-200"
+            style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)", lineHeight: 1.15, letterSpacing: "-0.02em", color: "var(--text-primary)" }}
           >
             {teaser.title}
           </h2>
-          <p className="font-serif leading-relaxed mb-6" style={{ color: "var(--text-secondary)" }}>
+
+          <p className="font-serif text-base leading-relaxed mb-6" style={{ color: "var(--text-secondary)", maxWidth: "54ch" }}>
             {teaser.body}
           </p>
-          <Link href={teaser.linkHref} className="text-sm link-underline" style={{ color: "var(--accent)" }}>
-            {teaser.linkLabel}
-          </Link>
-        </div>
+
+            <div className="flex items-center gap-2 text-sm" style={{ color: "var(--accent)" }}>
+              <span>{teaser.linkLabel.replace(" →", "")}</span>
+              <ArrowRight />
+            </div>
+          </div>
 
         {/* Mini TABE demo — static preview, always "on" visually */}
         <div
-          className="p-6 border font-serif text-base leading-relaxed tabe-mode"
-          style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+          className="hidden md:block w-56 lg:w-72 p-6 font-serif text-base leading-relaxed tabe-mode"
+          style={{ backgroundColor: "var(--bg-hover)" }}
         >
           <p className="text-2xs tracking-[0.15em] uppercase mb-4 font-sans" style={{ color: "var(--text-tertiary)" }}>
             {teaser.previewLabel}
@@ -298,6 +465,7 @@ function ToolsTeaser() {
           </p>
         </div>
       </div>
+      </Link>
     </section>
   );
 }

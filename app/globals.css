@@ -7,17 +7,17 @@
 
 /* ─── Base tokens ───────────────────────────────────────────────── */
 :root {
-  --bg:          #F5F4EE;
-  --bg-subtle:   #EBE9E1;
-  --bg-hover:    #E2E0D6;
-  --surface:     #FAFAF7;
-  --border:      #DCD9CE;
-  --border-strong: #C5C0B0;
-  --text-primary:  #1A1A17;
-  --text-secondary:#636359;
-  --text-tertiary: #A8A190;
-  --accent:        #E34D12;
-  --accent-light:  #FF8066;
+  --bg:          #EFF1F1;
+  --bg-subtle:   #E1E5E5;
+  --bg-hover:    #D3D9D9;
+  --surface:     #FAFBFA;
+  --border:      #CDD4D4;
+  --border-strong: #AAB5B5;
+  --text-primary:  #151817;
+  --text-secondary:#586160;
+  --text-tertiary: #879291;
+  --accent:        #B9472B;
+  --accent-light:  #D76549;
 }
 
 .dark {
@@ -30,8 +30,8 @@
   --text-primary:  #F5F4EE;
   --text-secondary:#A8A190;
   --text-tertiary: #636359;
-  --accent:        #FF8066;
-  --accent-light:  #FFB3A0;
+  --accent:        #E15A38;
+  --accent-light:  #F09A82;
 }
 
 /* ─── Base resets ───────────────────────────────────────────────── */

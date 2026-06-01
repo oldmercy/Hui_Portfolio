@@ -7,6 +7,7 @@ import { useTheme, useTabe } from "../ThemeProvider";
 
 const links = [
   { label: "Writing", href: "/writing" },
+  { label: "Teaching", href: "/teaching" },
   { label: "Tools",   href: "/tools"   },
   { label: "About",   href: "/about"   },
 ];
