@@ -1,0 +1,191 @@
+---
+title: "Tutorial 2: Computer Exercises (Chapter 1) — C1 & C2"
+date: "ECO375 / Wooldridge (Introductory Econometrics)"
+output: pdf_document
+urlcolor: blue
+geometry: left=0.75in, right=0.75in, top=0.75in, bottom=0.75in
+aurthor: Wenhui Xu
+---
+
+# 0. Setup
+
+This handout walks through **Chapter 1 Computer Exercises C1 and C2** using the `wooldridge` package datasets `wage1` and `bwght`.
+
+```{r}
+options(repos = c(CRAN="http://cran.rstudio.com"))
+
+if (!require("wooldridge")) install.packages("wooldridge")
+if (!require("dplyr")) install.packages("dplyr")
+if (!require("ggplot2")) install.packages("ggplot2")
+
+```
+
+# 1. Computer Exercise C1 (data: `wage1`)
+
+We use the data set **WAGE1**.
+
+```{r}
+data('wage1')    # loads a data.frame named wage1
+?wage1         # open documentation in RStudio
+```
+
+## 1.1 What the question is asking (plain English)
+
+You are asked to (i) summarize education and wage in the sample, (ii) adjust the nominal 1976 wage into 2013 dollars using the CPI, and (iii) count men vs. women.
+
+## 1.2 Solution
+
+### (i) Average education; lowest and highest education
+
+```{r}
+educ_mean <- mean(wage1$educ)
+educ_min  <- min(wage1$educ)
+educ_max  <- max(wage1$educ)
+
+educ_mean; educ_min; educ_max
+summary(wage1$educ)
+```
+
+A quick plot helps you see the distribution:
+
+```{r, message=FALSE}
+ggplot(wage1, aes(x = educ)) +
+  geom_histogram(binwidth = 1) +
+  labs(title = "Education (years) in WAGE1", x = "Years of education", y = "Count")
+```
+
+### (ii) Average hourly wage; does it seem high or low?
+
+```{r}
+wage_mean_1976 <- mean(wage1$wage)
+wage_mean_1976
+summary(wage1$wage)
+```
+
+Interpretation note: this is **in 1976 dollars**, so it will look “low” by modern standards.
+
+### (iii) Find CPI for 1976 and 2013
+
+The exercise asks you to obtain CPI values from an outside source (internet/printed). For reproducibility in this tutorial, we plug in commonly-used CPI-U values (base period 1982–1984 = 100):
+
+```{r}
+cpi_1976 <- 56.9
+cpi_2013 <- 232.957
+cpi_1976; cpi_2013
+```
+
+### (iv) Convert average wage into 2013 dollars; does it seem reasonable?
+
+To convert **1976 dollars → 2013 dollars**:
+
+\[
+\text{wage}_{2013} = \text{wage}_{1976} \times \frac{\text{CPI}_{2013}}{\text{CPI}_{1976}}.
+\]
+
+```{r}
+wage1 <- wage1 %>%
+  mutate(wage_2013 = wage * (cpi_2013 / cpi_1976))
+
+wage_mean_2013 <- mean(wage1$wage_2013)
+wage_mean_2013
+summary(wage1$wage_2013)
+```
+
+### (v) How many women? How many men?
+
+In `wage1`, `female` is a dummy variable: 1 = female, 0 = male.
+
+```{r}
+n_female <- sum(wage1$female == 1, na.rm = TRUE)
+n_male   <- sum(wage1$female == 0, na.rm = TRUE)
+n_total  <- nrow(wage1)
+
+c(n_female = n_female, n_male = n_male, n_total = n_total)
+table(wage1$female)
+```
+
+# 2. Computer Exercise C2 (data: `bwght`)
+
+We use the data set **BWGHT** (birth weight / smoking / family background).
+
+```{r}
+data("bwght")     # loads a data.frame named bwght
+?bwght
+```
+
+## 2.1 What the question is asking (plain English)
+
+You are asked to compute counts and averages related to smoking during pregnancy, interpret why a mean can be misleading when many values are zero, handle missing values, and convert family income units.
+
+## 2.2 Solution
+
+### (i) Sample size; how many smoked during pregnancy?
+
+```{r}
+n <- nrow(bwght)
+n_smokers <- sum(bwght$cigs > 0, na.rm = TRUE)
+n_nonsmokers <- sum(bwght$cigs == 0, na.rm = TRUE)
+
+c(n_total = n, n_smokers = n_smokers, n_nonsmokers = n_nonsmokers)
+```
+
+### (ii) Average cigarettes per day; is the mean a good “typical” measure?
+
+```{r}
+mean_cigs <- mean(bwght$cigs, na.rm = TRUE)
+median_cigs <- median(bwght$cigs, na.rm = TRUE)
+
+c(mean_cigs = mean_cigs, median_cigs = median_cigs)
+```
+
+A quick diagnostic plot:
+
+```{r, message=FALSE}
+ggplot(bwght, aes(x = cigs)) +
+  geom_histogram(binwidth = 1) +
+  labs(title = "Cigarettes per day (BWGHT)", x = "Cigarettes per day", y = "Count")
+```
+
+Interpretation note: when a large share of observations are **zero**, the mean gets “pulled down” and may not represent a “typical” person. In that setting, the **median** (often 0 here) is a better summary of the typical value.
+
+### (iii) Average cigarettes per day among smokers; compare and explain
+
+```{r}
+mean_cigs_smokers <- mean(bwght$cigs[bwght$cigs > 0], na.rm = TRUE)
+mean_cigs_smokers
+```
+
+This will be much larger than the overall mean because the overall mean averages in a big mass of zeros.
+
+### (iv) Average father’s education; why only 1,192 observations?
+
+```{r}
+fatheduc_mean <- mean(bwght$fatheduc, na.rm = TRUE)
+n_used_fatheduc <- sum(!is.na(bwght$fatheduc))
+n_missing_fatheduc <- sum(is.na(bwght$fatheduc))
+
+c(mean_fatheduc = fatheduc_mean,
+  n_used = n_used_fatheduc,
+  n_missing = n_missing_fatheduc,
+  n_total = nrow(bwght))
+```
+
+Explanation: only observations with **non-missing** values of `fatheduc` can be used in computing the mean.
+
+### (v) Average family income and its standard deviation in dollars
+
+In `bwght`, `faminc` is measured in **thousands of dollars**. Convert to dollars by multiplying by 1,000.
+
+```{r}
+faminc_dollars <- bwght$faminc * 1000
+
+mean_faminc <- mean(faminc_dollars, na.rm = TRUE)
+sd_faminc   <- sd(faminc_dollars, na.rm = TRUE)
+
+c(mean_faminc = mean_faminc, sd_faminc = sd_faminc)
+```
+
+# 3. Quick checklist (what to turn in)
+
+- C1: mean/min/max education; mean wage (1976); CPI values; mean wage (2013 dollars); counts of women/men.
+- C2: sample size and smoker counts; mean and median `cigs`; mean `cigs` among smokers; mean `fatheduc` and explain missingness; mean and SD of family income in dollars.

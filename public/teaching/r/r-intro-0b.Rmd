@@ -1,0 +1,232 @@
+---
+title: "1b. R objects"
+date: "ECO1400"
+output: pdf_document
+urlcolor: blue
+geometry: left=0.75in, right=0.75in, top=0.75in, bottom=0.75in
+---
+
+# 1. R objects
+Everything in R is generally called an "object". These include data and functions. It is important to distinguish between:
+
+- **Type** of an object, for working with data,
+- **Class** of an object, for working with functions.
+
+The type versus class distinction originally comes from programming languages such as C++. 
+
+# 2. R data types
+R has several basic data types:
+
+- *character*
+- *double* (we can think of this as a real number)
+- *integer*
+- *logical*
+- *complex*
+
+The type of a data object is checked by the function `typeof()`.
+```{r}
+x <- 1
+typeof(x)
+```
+
+Elements of these data types are combined into data structures.
+
+# 3. R Data Structures
+
+\begin{table}[h]
+\centering
+\caption{Data structures in R}
+\vspace{0.5em}
+\begin{tabular}{|l|l|l|}
+\hline
+Dimensionality & Homogenous Contents & Heterogeneous Contents \\ \hline
+1 dimension & atomic vector & list \\ 
+2 dimensions & matrix & data frame \\ 
+$n$ dimensions & array & \\ \hline
+\end{tabular}
+\end{table}
+
+## 3.1 Atomic Vector and List
+
+The basic data structure of 1 dimension is a “vector”. There are two kinds of vectors: atomic vector and a list. Elements of an atomic vector must all be of the same type. Elements of a list can be of different types.
+
+We can construct atomic vectors by the function `c()`, which we can read as "combine".
+```{r}
+v <- c(2, 3, 4)
+v
+```
+
+The type of an atomic vector is the type same as the type of its individual elements.
+```{r}
+typeof(v)
+```
+
+We can construct lists by function `list()`:
+```{r}
+ls <- list(x, v, c("a", "b", "c"), c(TRUE, FALSE))
+ls
+```
+
+Since a list contains data of different types, its type is a *list*.
+```{r}
+typeof(ls)
+```
+
+The structure of a list (and any other object) in R is checked by the function `str()`.
+```{r}
+str(ls)
+```
+
+## 3.2 Matrix and Data Frame
+
+A data structure of 2 dimensions of elements of the same type is called a matrix. Matrices are filled in by columns, here from a sequence of numbers 1 to 10 created by the syntax `1:10`.
+```{r}
+m <- matrix(1:10, nrow = 5, ncol = 2) 
+m
+```
+
+The type of a matrix is the same as of its elements.
+```{r}
+typeof(m)
+```
+
+A data structure of 2 dimensions of elements of different types is called a data frame. The elements of a data frame must have the same length (i.e. number of entries). A data frame is thus structured like a matrix but with vectors of different types. As an example, we will construct a data frame of three vectors with types *numerical*, *logical*, and *character*, using the function `data.frame()`: 
+```{r}
+df <- data.frame(a=c(1,2,3,4), b=c(TRUE,FALSE,TRUE,TRUE), c=c("one","two","three","four"))
+str(df)
+```
+
+# 4. Indexing
+We can reference an element inside an R data structure with square brackets `[ ]`. For object of 1 dimension v= (2,3,4):
+```{r}
+v[2]
+```
+
+For objects of 2 dimensions:
+```{r}
+m[3,2]
+```
+
+Variables in data frames can also be referenced using the operator `$`.
+```{r}
+df$a
+```
+
+# 5. Object Attributes: Dimension, Names, Class
+An object in R has "attributes" such as dimensions, names, and class.
+
+## 5.1 Dimension
+Dimensions are assigned or checked using the function `dim()`. 
+
+The dimensions of the 5x2 matrix m are:
+```{r}
+dim(m)
+```
+
+The dimensions of the data frame df are:
+```{r}
+dim(df)
+```
+
+## 5.2 Names
+
+Names are assigned or checked using the function `names()`. 
+```{r}
+names(v) <- c("two", "three", "four") # assign names to elements of the vector v
+names(v) # display the names
+```
+
+## 5.3 Class
+
+A class of an object describes its design. A class is an important attribute of an R object because many R functions only allow as inputs objects of specific classes. For example, the function `weekdays()` only allows as input an object of class *Date* (or the related time class *POSIXt*), as we will see further below.
+
+In many cases a class of an R object coincides with its type. 
+```{r}
+class(m)
+```
+
+But in other cases a class differs from the type of an object. For example, an important class in time series analysis is the *Date* class on which we will elaborate in the next section. 
+
+There are multiple classes that are grouped together as *numeric* classes, the two most common of which are *integer* and *double* (for double precision floating point numbers, i.e. real numbers). The class *numeric* and *integer* or *double* can thus be used interchangeably.
+
+# 6. R objects of class Date
+
+We can create an object containing calendar dates using the function [`as.Date()`](https://rdrr.io/r/base/as.Date.html). The function requires an object of class *character* as input (here formatted as "yyyy-mm-dd") and returns an object of class *Date* containing the year, month, and day. 
+```{r}
+dt <- as.Date("2022-01-01")
+dt
+```
+
+We can check that the function `as.Date()` returns an object of class *Date*.
+```{r}
+class(dt)
+```
+
+However, the type of the object dt is *double* (numeric) since dt is made of numbers.
+```{r}
+typeof(dt)
+```
+
+Many R time series functions only allow arguments of class *Date* and their extensions. This is one of the reasons why the class of an object is so important. Without understanding the class attribute we will not be able to use R time series functions. 
+
+As an example, consider the function `weekdays()`, which returns a vector of the day names of its argument. The function only works with argument objects of class *Date*. If we try to input as an argument an object of another class, say *double* (*numeric*), we get an error. 
+
+Recall our vector of numbers v, which is of class *numeric* (*double*):
+```{r}
+class(v)
+v
+```
+
+The function weekdays applied to it will not run. 
+```{r, error=TRUE}
+weekdays(v)
+```
+
+Let's create and object of class *Date*, which is a sequence of calendar dates. We will first create the initial date (object `start`) and final date (object `end`) of class *Date*. We will use the function `seq()` that produces an object of the same class as its `from=` and `to=` arguments.
+```{r}
+start <- as.Date("2022-01-01")
+end   <- as.Date("2022-01-07")
+days  <- seq(from=start, to=end, by="day")
+days
+```
+
+We can check the resulting class of `days`:
+```{r}
+class(days)
+```
+
+If we now pass the object days of class *Date* into the function `weekdays()`, which only accepts arguments of class *Date*, the function will run properly:
+```{r}
+weekdays(days)
+```
+
+The help files of functions typically specify which object classes the functions take as inputs and which object classes they return as the result. 
+
+For example, you can check the required class of the arguments and the output object class of the function `weekdays()` either in the R online [documentation](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/weekdays) or using the `help()` function:
+```{r, eval=F}
+help(weekdays)
+```
+The output of the `help()` function will be displayed in the bottom-right pane of RStudio. 
+
+In contrast to the few basic data types, there are many different classes of objects in R. For example, the class of the output object of the function `help()` is *help_files_with_topic*:
+```{r}
+class(help())
+```
+
+One R object can have more than class attribute. As an example, take the function `Sys.time()`, which returns the current date and time:
+```{r}
+now <- Sys.time()
+now
+```
+
+The class of the output object of `Sys.time()` is of both class *POSIXct* and *POSIXt*, encoding date and time functionality.
+```{r}
+class(now)
+```
+
+However, the object is of type *double* (*numeric*), since it is internally made of numerical elements.
+```{r}
+typeof(now)
+```
+
+

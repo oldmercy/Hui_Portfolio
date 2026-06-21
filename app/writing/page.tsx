@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { getAllPapers } from "@/lib/papers";
+import { getAllPapers, getFeaturedPaper } from "@/lib/papers";
 import type { Paper } from "@/lib/papers";
 import { getSiteContent } from "@/lib/site-content";
 
@@ -11,8 +11,8 @@ const { writing: wc } = getSiteContent("en");
 
 export default function WritingPage() {
   const papers = getAllPapers("en");
-  const featured = papers[0];
-  const rest = papers.slice(1);
+  const featured = getFeaturedPaper("en");
+  const rest = papers.filter((p) => !p.featured);
 
   return (
     <div className="max-w-5xl mx-auto px-6 pb-32">
@@ -96,7 +96,7 @@ function HeroCard({ paper }: { paper: Paper }) {
       ref={ref}
       role="article"
       className="scroll-reveal group mt-12 border transition-all duration-300 relative overflow-hidden cursor-pointer"
-      style={{ borderColor: "var(--border)" }}
+      style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
       onClick={() => router.push(`/writing/${paper.slug}`)}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLElement).style.borderColor = "var(--accent)";
@@ -231,19 +231,19 @@ function PaperListRow({ paper, index }: { paper: Paper; index: number }) {
     >
       <Link
         href={`/writing/${paper.slug}`}
-        className="group flex items-start gap-6 py-8 transition-colors duration-150"
+        className="group flex items-start gap-6 py-8 px-4 -mx-4 rounded-sm transition-all duration-150"
+        style={{ backgroundColor: "transparent" }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.paddingLeft = "0.5rem";
-          (e.currentTarget as HTMLElement).style.transition = "padding 0.2s ease";
+          (e.currentTarget as HTMLElement).style.backgroundColor = "var(--surface)";
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.paddingLeft = "0";
+          (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
         }}
       >
         {/* Index number */}
         <span
           className="font-serif text-4xl font-light leading-none pt-1 w-10 shrink-0 select-none"
-          style={{ color: "var(--border-strong)" }}
+          style={{ color: "color-mix(in srgb, var(--accent) 35%, var(--border-strong))" }}
         >
           {String(index + 2).padStart(2, "0")}
         </span>
@@ -301,7 +301,7 @@ function CategoryPill({ label }: { label: string }) {
   return (
     <span
       className="text-2xs font-sans tracking-[0.13em] uppercase px-2 py-0.5"
-      style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-tertiary)" }}
+      style={{ backgroundColor: "color-mix(in srgb, var(--accent) 10%, var(--bg))", color: "var(--accent)" }}
     >
       {label}
     </span>

@@ -21,6 +21,8 @@ export type PaperSection = {
   type: "section";
   heading: string;
   paragraphs: string[];
+  items?: string[];   // optional bullet list rendered after paragraphs
+  closing?: string;  // optional paragraph rendered after the list
 };
 
 export type Paper = {
@@ -42,12 +44,11 @@ export type Paper = {
 // Add a new import here whenever a new paper is added.
 // ---------------------------------------------------------------------------
 
-import enCausal   from "@/content/papers/en/causal-inference-business.json";
-import enPanel    from "@/content/papers/en/panel-data-economic-growth.json";
-import enConsumer from "@/content/papers/en/business-analytics-consumer-behaviour.json";
+import enGenderMath from "@/content/papers/en/gender-gap-math.json";
+import enGender   from "@/content/papers/en/gender-expansive-early-education.json";
 
 const papersByLang: Record<string, Paper[]> = {
-  en: [enCausal, enPanel, enConsumer] as Paper[],
+  en: [enGenderMath, enGender] as Paper[],
   // zh: [zhCausal, zhPanel, zhConsumer],   ← uncomment when Chinese papers are ready
 };
 

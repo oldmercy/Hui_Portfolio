@@ -1,0 +1,383 @@
+---
+title: "Tutorial 4: Computer Exercises (Chapter 2) - C6, C7, C8"
+date: "ECO375"
+author: "Wenhui Xu"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+urlcolor: blue
+geometry: left=0.75in, right=0.75in, top=0.75in, bottom=0.75in
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+
+
+# Overview
+
+This tutorial covers three computer exercises from Wooldridge (2019), Chapter 2:
+
+- **C6 (MEAP93):** a level-log model of math pass rates on spending per student.
+- **C7 (CHARITY):** a simple regression of charitable giving on mailings per year.
+- **C8 (Simulation):** generating data to illustrate sampling variation and OLS residual properties.
+
+We will use base R as much as possible.
+
+```{r packages}
+# Install/load packages only if needed
+if (!requireNamespace("wooldridge", quietly = TRUE)) install.packages("wooldridge")
+library(wooldridge)
+
+# Optional helpers (not strictly required)
+if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
+library(dplyr)
+```
+
+
+# 0.5 A quick demonstration: the pipe operator `%>%`
+
+In this course we will often use the **pipe operator** `%>%` (from `dplyr` / `magrittr`).  
+Read it as **"then"**: it takes the object on the left and passes it into the function on the right.
+
+## The basic rule
+
+```{r pipe_basic}
+# These two lines do the same thing:
+sqrt(16)
+16 %>% sqrt()
+```
+
+In general:
+
+- `x %>% f()` means `f(x)`
+- `x %>% f(a = 1)` means `f(x, a = 1)`
+
+## A two-step pipeline
+
+```{r pipe_demo_data}
+demo_df <- data.frame(
+  math10 = c(20, 40, 60),
+  expend = c(3500, 4200, 5100)
+)
+```
+
+```{r pipe_two_steps}
+# Without pipes (read inside-out):
+summary(dplyr::select(demo_df, math10, expend))
+
+# With pipes (read top-down):
+demo_df %>%
+  dplyr::select(math10, expend) %>%
+  summary()
+```
+
+## The placeholder `.` (when x is not the first argument)
+
+Sometimes the function you want to call does *not* take your object as the first input.  
+Then you can use `.` to mark where the left-hand object should go.
+
+```{r pipe_dot_placeholder1}
+v <- c(1, 2, 3, 4, 5)
+
+# Same result:
+paste(v, collapse = "-")
+v %>% paste(collapse = "-")
+```
+
+```{r pipe_dot_placeholder2}
+s <- "1-2-3-4-5"
+
+# gsub(pattern, replacement, x)
+gsub("-", "_", s)
+
+# Using the dot placeholder:
+s %>% gsub("-", "_", .)
+
+```
+
+## A common pattern in data analysis
+
+"Take a dataset -> select columns -> create new variables -> summarize"
+
+```{r pipe_common_pattern}
+demo_df %>%
+  dplyr::select(math10, expend) %>%
+  dplyr::mutate(ln_expend = log(expend)) %>%
+  summary()
+```
+
+> Note: `%>%` works because we load `dplyr` in this tutorial. If you ever see an error
+> like "could not find function %>%", it means the package was not loaded.
+
+
+# C6: MEAP93 (math10 vs log(expend))
+
+## What the problem is asking (plain English)
+
+1. Conceptually: does spending have diminishing returns for pass rates?
+2. Show why, in the model math10 = b0 + b1 log(expend) + u, the quantity b1/10 is the change in **percentage points** in math10 when expend rises by 10%.
+3. Estimate the regression and report the fitted equation with n and R^2.
+4. Use the estimate to compute the impact of a 10% spending increase.
+5. Check whether fitted values exceed 100, and explain why this is not a major concern here.
+
+## Data and a quick look
+
+```{r c6_load}
+data("meap93")
+meap93 <- as_tibble(meap93)
+
+# Key variables
+meap93 %>% select(math10, expend) %>% summary()
+```
+
+## (i) Diminishing effect intuition
+
+A linear-in-levels model assumes each extra dollar has the same marginal effect.
+A log specification allows the effect of spending to shrink as spending gets larger.
+
+Here we proceed with the **level-log** model:
+\[
+math10 = b_0 + b_1 \log(expend) + u.
+\]
+
+## (ii) Why b1/10 corresponds to a 10% increase in expend
+
+A 10% increase means expend_new = 1.10 * expend.
+Then:
+
+log(expend_new) - log(expend) = log(1.10) \approx 0.0953.
+
+So the change in predicted math10 is approximately:
+
+b1 * log(1.10) \approx b1 * 0.10 = b1/10.
+
+Because math10 is measured in **percentage points**, this change is in percentage points too.
+
+## (iii) Estimate the model and report the equation
+
+```{r c6_reg}
+c6_fit <- lm(math10 ~ log(expend), data = meap93)
+summary(c6_fit)
+
+b0_hat <- coef(c6_fit)[1]
+b1_hat <- coef(c6_fit)[2]
+n_c6   <- nobs(c6_fit)
+r2_c6  <- summary(c6_fit)$r.squared
+
+list(b0_hat = b0_hat, b1_hat = b1_hat, n = n_c6, r2 = r2_c6)
+```
+
+Write the fitted equation:
+
+```{r c6_equation, results='asis'}
+cat(sprintf("Estimated equation:\n\nmath10 = %.3f + %.3f * log(expend)\n\nn = %d,   R^2 = %.4f\n",
+            b0_hat, b1_hat, n_c6, r2_c6))
+```
+
+## (iv) Effect of a 10% increase in spending
+
+```{r c6_effect10}
+effect_10pct_exact <- b1_hat * log(1.10)
+effect_10pct_approx <- b1_hat / 10
+
+c(effect_10pct_exact = effect_10pct_exact,
+  effect_10pct_approx = effect_10pct_approx)
+```
+
+Interpretation: a 10% increase in spending is associated with an increase of about the number above (in **percentage points**) in the math pass rate.
+
+## (v) Can fitted values exceed 100?
+
+```{r c6_fitted}
+meap93 <- meap93 %>% mutate(math10_hat = fitted(c6_fit))
+
+summary(meap93$math10_hat)
+sum(meap93$math10_hat > 100)
+max(meap93$math10_hat)
+```
+
+Why this is not much of a worry here:
+
+- The sample range of log(expend) is limited, so predicted values tend to stay in a realistic range.
+- Even if a few fitted values were slightly above 100, that is a limitation of the linear regression functional form, not necessarily a data problem.
+
+# C7: CHARITY (gift vs mailsyear)
+
+## What the problem is asking (plain English)
+
+1. Compute average gift and the percentage of people who gave zero.
+2. Summarize mailings per year: mean, min, max.
+3. Estimate gift = b0 + b1 mailsyear + u and report n and R^2.
+4. Interpret b1 and discuss net gain if each mailing costs one guilder.
+5. Find the smallest predicted gift. Can the model ever predict exactly zero?
+
+## Data checks
+
+```{r c7_load}
+data("charity")
+charity <- as_tibble(charity)
+
+charity %>% select(gift, mailsyear) %>% summary()
+```
+
+## (i) Average gift and percent zero
+
+```{r c7_part_i}
+avg_gift <- mean(charity$gift, na.rm = TRUE)
+pct_zero <- mean(charity$gift == 0, na.rm = TRUE) * 100
+
+c(avg_gift = avg_gift, pct_zero = pct_zero)
+```
+
+## (ii) Mailings per year: mean, min, max
+
+```{r c7_part_ii}
+c(mean_mailsyear = mean(charity$mailsyear, na.rm = TRUE),
+  min_mailsyear  = min(charity$mailsyear, na.rm = TRUE),
+  max_mailsyear  = max(charity$mailsyear, na.rm = TRUE))
+```
+
+## (iii) Estimate the regression and report
+
+```{r c7_reg}
+c7_fit <- lm(gift ~ mailsyear, data = charity)
+summary(c7_fit)
+
+b0_c7 <- coef(c7_fit)[1]
+b1_c7 <- coef(c7_fit)[2]
+n_c7  <- nobs(c7_fit)
+r2_c7 <- summary(c7_fit)$r.squared
+
+list(b0_hat = b0_c7, b1_hat = b1_c7, n = n_c7, r2 = r2_c7)
+```
+
+```{r c7_equation, results='asis'}
+cat(sprintf("Estimated equation:\n\ngift = %.3f + %.3f * mailsyear\n\nn = %d,   R^2 = %.4f\n",
+            b0_c7, b1_c7, n_c7, r2_c7))
+```
+
+## (iv) Interpret b1 and net gain per mailing
+
+- b1 is the **expected change in gift (guilders)** when mailings per year increases by 1.
+- If a mailing costs 1 guilder, then the expected net gain from one additional mailing is approximately (b1 - 1).
+
+```{r c7_netgain}
+expected_net_gain_per_mailing <- b1_c7 - 1
+expected_net_gain_per_mailing
+```
+
+Important nuance: this is an **average** effect across the sample, not a guarantee that every mailing to every person produces a gain.
+
+## (v) Smallest predicted gift and can we predict zero?
+
+```{r c7_pred}
+charity <- charity %>% mutate(gift_hat = fitted(c7_fit))
+
+min_pred <- min(charity$gift_hat, na.rm = TRUE)
+min_pred
+```
+
+Can the simple regression ever predict zero?
+
+- The fitted value is: gift_hat = b0_hat + b1_hat * mailsyear.
+- This equals zero only if mailsyear = -b0_hat / b1_hat, which may not be an integer and may be outside the observed range.
+- If b0_hat > 0 and mailsyear is nonnegative, then predictions will tend to be positive.
+
+# C8: Simulation and OLS properties
+
+## What the problem is asking (plain English)
+
+We simulate data from a known population process:
+
+1. Draw x from Uniform(0, 10) and compute sample mean and sd.
+2. Draw u from Normal(0, 36) and compute sample mean and sd; explain why sample mean is not exactly zero.
+3. Generate y = 1 + 2x + u, run OLS, and compare estimates to the true values (1 and 2).
+4. Compute residuals and verify the OLS residual properties: sum(uhat) = 0 and sum(x*uhat) = 0 (up to rounding).
+5. Replace residuals by the *true* errors u and see these properties do not hold in finite samples.
+6. Repeat (i)-(iii) with a new sample and explain why estimates change.
+
+## A clean, reproducible implementation
+
+```{r c8_simulation}
+set.seed(375)  # reproducibility
+
+n <- 500
+
+# (i) x ~ Uniform(0,10)
+x <- runif(n, min = 0, max = 10)
+mean_x <- mean(x)
+sd_x   <- sd(x)
+
+# (ii) u ~ Normal(0,36) so sd = 6
+u <- rnorm(n, mean = 0, sd = 6)
+mean_u <- mean(u)
+sd_u   <- sd(u)
+
+# (iii) y = 1 + 2x + u
+y <- 1 + 2*x + u
+
+fit <- lm(y ~ x)
+
+b0_hat <- coef(fit)[1]
+b1_hat <- coef(fit)[2]
+
+list(mean_x = mean_x, sd_x = sd_x,
+     mean_u = mean_u, sd_u = sd_u,
+     b0_hat = b0_hat, b1_hat = b1_hat)
+```
+
+### (ii) Why is the sample mean of u not exactly zero?
+
+Even though E[u] = 0 in the population, a finite random sample will almost never have sample mean exactly 0.
+As n grows, the sample mean tends to get closer to 0 (law of large numbers).
+
+### (iv) OLS residual properties (sample analog of equation 2.60)
+
+```{r c8_residual_properties}
+uhat <- resid(fit)
+
+# Theoretical properties (in sample, with intercept):
+# sum(uhat) = 0 and sum(x * uhat) = 0, up to rounding error.
+c(sum_uhat = sum(uhat),
+  sum_x_uhat = sum(x * uhat))
+```
+
+### (v) Same computation using the *true* errors u
+
+```{r c8_true_errors}
+c(sum_u = sum(u),
+  sum_x_u = sum(x * u))
+```
+
+Conclusion: the residual properties are guaranteed by the OLS algebra, but the same equalities do not generally hold if we plug in the unobserved true errors u.
+
+### (vi) Repeat (i)-(iii) with a new sample
+
+```{r c8_repeat}
+set.seed(376)  # new seed -> new sample
+
+x2 <- runif(n, 0, 10)
+u2 <- rnorm(n, 0, 6)
+y2 <- 1 + 2*x2 + u2
+
+fit2 <- lm(y2 ~ x2)
+coef(fit2)
+```
+
+Why are the new estimates different?
+
+Because each sample has different random draws of x and u, so the OLS estimates vary from sample to sample. With larger n, they concentrate around the true values (consistency).
+
+# Wrap-up
+
+- C6 shows how to interpret a level-log model and translate log changes into percentage changes.
+- C7 shows how to interpret a simple regression, including the difference between an average effect and an individual outcome.
+- C8 connects probability theory to the mechanics of OLS: residual properties hold by construction, and sampling variation is unavoidable.

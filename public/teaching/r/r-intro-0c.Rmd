@@ -1,0 +1,102 @@
+---
+title: "Graphics in R using ggplot"
+date: "ECO1400"
+output: pdf_document
+urlcolor: blue
+geometry: margin=0.75in
+---
+
+\vspace{0.2in}
+Install and load required R packages
+```{r, message=FALSE}
+chooseCRANmirror(ind=0) 
+if (!require("xts")) install.packages("xts") # Time series analysis functions
+if (!require("ggplot2")) install.packages("ggplot2") # Plot functions
+if (!require("stats")) install.packages("stats") # Statistical functions 
+library(xts)      # functions: xts
+library(ggplot2)  # functions: ggplot
+library(stats)    # functions: decompose
+```
+
+Load data (5-Year Treasury Constant Maturity Rate ([Source](https://fred.stlouisfed.org/series/DGS5)))
+```{r, message=FALSE}
+if (!require("quantmod")) install.packages("quantmod")
+library(quantmod) # functions: getSymbols
+DGS5.table <- getSymbols("DGS5", src="FRED", return.class="xts", auto.assign=FALSE)
+```
+
+# 1. Base Graphics
+
+In R there are many ways to do one thing, especially when it comes to graphics. R comes with built-in graphics functionality, typically referred to as "base graphics". For line plots, the main function is `plot()`. Its output style depends on the class of the object passed in as argument. 
+
+Plot of an *xts* class object
+```{r, fig.width=6, fig.height=3}
+plot(DGS5.table, main="5-year Treasury Rate")
+```
+
+\newpage
+# 2. ggplot
+
+The `ggplot2` package contains graphics functions that extend the based graphics environment. First, we specify the data to be plotted, and the plot "aesthetics" in the `aes()` argument such as specifying the X and Y axis variables. Next, the plot is activated by adding one or more "layers" (also called "geoms") separated by the plus sign `+`.
+
+The `geom_line()` layer activates a line plot.
+```{r, fig.width=6, fig.height=3}
+ggplot(data=DGS5.table, aes(x=index(DGS5.table), y=DGS5)) + geom_line()
+```
+
+The `geom_line()` layer also contains options for line plot colour and type. 
+```{r, fig.width=6, fig.height=3}
+ggplot(data=DGS5.table, aes(x=index(DGS5.table), y=DGS5)) + 
+  geom_line(color="brown",linetype="solid") 
+```
+
+\newpage
+The `labs()` layer specifies the x,y labels and the graph title.
+```{r, fig.width=6, fig.height=3}
+ggplot(data=DGS5.table, aes(x=index(DGS5.table), y=DGS5)) + 
+  geom_line(color="brown",linetype="solid") + 
+  labs(x="Date", y="", title="5-year Treasury Rate")
+```
+
+The `scale_x_date()` layer specifies the frequency and [format](https://www.statmethods.net/input/dates.html) of the date labels on the x-axis.
+```{r, fig.width=6, fig.height=3}
+ggplot(data=DGS5.table, aes(x=index(DGS5.table), y=DGS5)) + 
+  geom_line(color="brown",linetype="solid") + 
+  labs(x="Date", y="", title="5-year Treasury Rate") +
+  scale_x_date(date_breaks="10 years", date_labels = "%m/%Y")  
+```
+
+\newpage
+The `theme_minimal()` layer changes the overall [theme](https://r-charts.com/ggplot2/themes/) (i.e. design) of the graph. 
+```{r, fig.width=6, fig.height=3}
+ggplot(data=DGS5.table, aes(x=index(DGS5.table), y=DGS5)) + 
+  geom_line(color="brown",linetype="solid") +
+  labs(x="Date", y="", title="5-year Treasury Rate") + 
+  scale_x_date(date_breaks="10 years", date_labels = "%m/%Y") + 
+  theme_minimal() 
+```
+
+The `theme()` layer further modifies the [components](https://ggplot2.tidyverse.org/reference/theme.html) of a theme. For example, we can change the size of the graph title to 10 pts. 
+```{r, fig.width=6, fig.height=3}
+ggplot(data=DGS5.table, aes(x=index(DGS5.table), y=DGS5)) + 
+  geom_line(color="brown",linetype="solid") +
+  labs(x="Date", y="", title="5-year Treasury Rate") + 
+  scale_x_date(date_breaks="10 years", date_labels = "%m/%Y") + 
+  theme_minimal() + 
+  theme(plot.title = element_text(size=10)) 
+```
+
+\newpage
+# 3. Graph Size in RStudio
+
+The size of graphs in RStudio output can be changed by the options `fig.width=` and `fig.height=` in the code chung headers. For example, we can generate a 6x3 inch graph as follows.
+
+````markdown
+`r ''````{r, fig.width=6, fig.height=3}
+<plot functions>
+```
+````
+
+# 4. ggplot Reference
+A useful reference graph gallery with various types of ggplot layers can be found [here](https://www.r-graph-gallery.com/). 
+

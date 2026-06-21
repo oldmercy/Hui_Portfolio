@@ -1,0 +1,255 @@
+---
+title: "Tutorial 9: Dummy Variables and Robust Standard Errors"
+date: "ECO375"
+author: "Wenhui Xu"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+urlcolor: blue
+geometry: left=0.75in, right=0.75in, top=0.75in, bottom=0.75in
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Overview
+
+This tutorial corresponds to the attached `tutorial_9.R`. It is concept-focused and has two goals:
+
+1. **Dummy variables and the dummy variable trap** (perfect multicollinearity when you include all category dummies plus an intercept).
+2. **Robust standard errors (White/HC)** using `sandwich::vcovHC()` and `lmtest::coeftest()`.
+
+We use the `cps91` dataset from the `wooldridge` package.
+
+```{r t9_packages}
+if (!requireNamespace("wooldridge", quietly = TRUE)) install.packages("wooldridge")
+if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
+if (!requireNamespace("sandwich", quietly = TRUE)) install.packages("sandwich")
+if (!requireNamespace("lmtest", quietly = TRUE)) install.packages("lmtest")
+
+library(wooldridge)
+library(dplyr)
+library(sandwich)
+library(lmtest)
+```
+
+# 1. Dummy variables and the dummy variable trap
+
+## 1.1 What the problem is asking (plain English)
+
+We want to estimate and interpret a regression of husband’s earnings (`husearns`) on union status (`husunion`, a binary variable).
+
+Then we want to understand what happens if we include *both* dummies (`husunion` and `nounion`) and whether we include an intercept.
+
+Key idea: if a variable is binary, the regression can be written in different (equivalent) ways—but some specifications create perfect collinearity.
+
+## 1.2 Step-by-step plan (how to solve it)
+
+1) Load `cps91` and inspect the binary regressor.  
+2) Estimate a model with an intercept and one dummy: `husearns ~ husunion`.  
+3) Create the complementary dummy `nounion = 1 - husunion`.  
+4) Estimate a model **without an intercept** using both dummies: `husearns ~ 0 + nounion + husunion`.  
+5) Try estimating a model **with an intercept and both dummies** and see what happens (dummy variable trap).  
+6) Interpret coefficients in each specification.
+
+## 1.3 Common pitfalls
+
+- **Including all category dummies plus an intercept:** this creates perfect collinearity.
+- **Forgetting what the intercept represents:** with a single dummy, the intercept is the mean of the base group.
+- **Misreading the “no intercept” formula:** in R, `0 +` removes the intercept.
+
+## 1.4 Data load and quick checks
+
+```{r t9_data_load}
+data("cps91")
+cps91 <- as_tibble(cps91)
+
+cps91 %>%
+  summarise(
+    n = n(),
+    pct_union = mean(husunion == 1, na.rm = TRUE),
+    mean_husearns = mean(husearns, na.rm = TRUE)
+  )
+```
+
+## 1.5 Model 1: intercept + one dummy
+
+Model:
+\[
+husearns = \beta_0 + \beta_1\,husunion + u
+\]
+
+Interpretation:
+- \(\beta_0\): average earnings for husbands **not** in a union
+- \(\beta_1\): difference in average earnings (union − nonunion)
+
+```{r t9_lm1}
+lm1 <- lm(husearns ~ husunion, data = cps91)
+summary(lm1)
+
+coef(lm1)
+```
+
+A quick way to verify the interpretation is to compute group means directly:
+
+```{r t9_means_check}
+cps91 %>%
+  group_by(husunion) %>%
+  summarise(
+    mean_husearns = mean(husearns, na.rm = TRUE),
+    n = n()
+  )
+```
+
+## 1.6 Model 2: no intercept + both dummies (equivalent parameterization)
+
+### Create the complementary dummy
+```{r t9_create_nounion}
+cps91 <- cps91 %>% mutate(nounion = 1 - husunion)
+
+# sanity check: nounion + husunion should be 1 for all observations
+cps91 %>% summarise(all_one = all(nounion + husunion == 1))
+```
+
+Model:
+\[
+husearns = \gamma_0\,nounion + \gamma_1\,husunion + u
+\]
+(with **no** intercept)
+
+Interpretation:
+- \(\gamma_0\): mean earnings for nonunion husbands
+- \(\gamma_1\): mean earnings for union husbands
+
+```{r t9_lm2}
+lm2 <- lm(husearns ~ 0 + nounion + husunion, data = cps91)
+summary(lm2)
+
+coef(lm2)
+```
+
+## 1.7 Model 3: intercept + both dummies (dummy variable trap)
+
+If you include an intercept **and** both dummies, you have perfect collinearity because:
+
+\[
+1 = nounion + husunion
+\]
+
+So one regressor is a perfect linear combination of the others (the intercept is a column of ones). R will drop a regressor and report `NA` for one coefficient.
+
+```{r t9_lm3}
+lm3 <- lm(husearns ~ nounion + husunion, data = cps91)
+summary(lm3)
+```
+
+**Takeaway:** when you have \(G\) categories, you include:
+- an intercept + \(G-1\) dummies, **or**
+- no intercept + all \(G\) dummies.
+
+# 2. Robust standard errors (White / HC)
+
+## 2.1 What the problem is asking (plain English)
+
+The usual OLS standard errors assume homoskedasticity (constant variance of \(u\) given \(x\)).
+
+If heteroskedasticity is present, OLS coefficients are still unbiased/consistent (under the usual assumptions), but the **usual** standard errors can be wrong. Robust (White/HC) standard errors fix the standard error calculation.
+
+In this tutorial, we compute robust standard errors for `lm1`.
+
+## 2.2 Step-by-step plan (how to solve it)
+
+1) Fit the OLS model `lm1`.  
+2) Compute a robust variance-covariance matrix using `sandwich::vcovHC(lm1, type="HC0")`.  
+3) Extract robust standard errors via `sqrt(diag(vcov_robust))`.  
+4) Use `lmtest::coeftest()` to print coefficient tests using robust SE.  
+5) (HW) Compute the robust variance matrix “by hand” using the sandwich formula and verify it matches `vcovHC()`.
+
+## 2.3 Common pitfalls
+
+- **Forgetting that robust SE change t statistics and p-values but not coefficients.**
+- **Using the wrong HC type:** HC0 is the original White; HC1 is a small-sample correction (often a good default in practice).
+- **Mixing up variance and standard error:** SE is the square root of the variance (diagonal element).
+
+## 2.4 Module: What are `vcovHC()` and `coeftest()`? (first-time tools)
+
+### `sandwich::vcovHC()`
+`vcovHC()` computes a **heteroskedasticity-consistent** covariance matrix for the OLS coefficients.
+
+The generic White “sandwich” estimator is:
+\[
+\widehat{\mathrm{Var}}(\hat\beta)
+= (X'X)^{-1} \left( \sum_{i=1}^n \hat u_i^2 x_i x_i' \right) (X'X)^{-1}.
+\]
+
+- `type="HC0"` corresponds closely to the expression above.
+- Other types (HC1, HC2, HC3, …) make small-sample or leverage adjustments.
+
+### `lmtest::coeftest()`
+`coeftest()` prints coefficient tests and allows you to **plug in a custom covariance matrix** (like a robust one).
+
+That means you can keep the same OLS coefficients but replace the standard errors used for inference.
+
+## 2.5 Robust SE using `vcovHC()` + `coeftest()`
+
+```{r t9_robust_vcov}
+robust_vcov <- vcovHC(lm1, type = "HC0")
+
+# Robust standard errors for each coefficient
+sqrt(diag(robust_vcov))
+```
+
+```{r t9_coeftest_robust}
+# Use robust VCOV inside coeftest.
+# df = Inf uses the large-sample (normal) reference distribution.
+coeftest(lm1, df = Inf, vcov = robust_vcov)
+```
+
+## 2.6 HW (complete): compute White (HC0) robust SE “by hand”
+
+We will manually construct the sandwich estimator:
+
+\[
+\widehat{\mathrm{Var}}(\hat\beta)
+= (X'X)^{-1} \, X' \widehat{\Omega} X \, (X'X)^{-1},
+\quad \widehat{\Omega} = \mathrm{diag}(\hat u_1^2,\ldots,\hat u_n^2).
+\]
+
+```{r t9_manual_hc0}
+# Design matrix X and residuals uhat
+X <- model.matrix(lm1)     # includes intercept column automatically
+uhat <- resid(lm1)
+
+# Sandwich pieces
+XtX_inv <- solve(t(X) %*% X)
+meat <- t(X) %*% (diag(uhat^2)) %*% X
+
+vcov_hc0_manual <- XtX_inv %*% meat %*% XtX_inv
+
+# Compare manual vs vcovHC
+max_abs_diff <- max(abs(vcov_hc0_manual - robust_vcov))
+max_abs_diff
+```
+
+Robust SE comparison (manual vs `vcovHC`):
+
+```{r t9_manual_vs_vcovhc}
+cbind(
+  se_manual = sqrt(diag(vcov_hc0_manual)),
+  se_vcovHC = sqrt(diag(robust_vcov))
+)
+```
+
+# Wrap-up
+
+- Dummy variables: choose a base category (intercept + one dummy) OR remove intercept and include all category dummies.
+- Dummy variable trap: intercept + all dummies creates perfect collinearity.
+- Robust SE: `vcovHC()` changes standard errors (and inference), not the OLS coefficient estimates.
+- `coeftest()` is a clean way to report robust t tests without rewriting the regression output.

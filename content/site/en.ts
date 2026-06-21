@@ -32,7 +32,7 @@ export const siteContentEn = {
     ],
     featured: {
       /** slug of the paper shown in the homepage teaser */
-      paperSlug: "causal-inference-business",
+      paperSlug: "gender-gap-math",
       /** slug key of the tool shown in the homepage teaser */
       toolKey: "cantread",
     },

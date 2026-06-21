@@ -1,0 +1,390 @@
+---
+title: "Tutorial 10: Instrumental Variables and 2SLS (MROZ) — v2"
+date: "ECO375"
+author: "Wenhui Xu"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+urlcolor: blue
+geometry: left=0.75in, right=0.75in, top=0.75in, bottom=0.75in
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Overview
+
+This tutorial builds an end-to-end IV workflow (2SLS) using the **MROZ** dataset:
+
+1) How to estimate **2SLS in R** (`AER::ivreg`)  
+2) How to report **correct standard errors** (including **robust** IV standard errors)  
+3) How to run a **Hausman-type endogeneity test** (Durbin–Wu–Hausman / Wu–Hausman)  
+4) How to assess **instrument strength** (first-stage F statistics; “weak IV” diagnostics)
+
+We use pipes (`%>%`) for clarity.
+
+```{r packages}
+if (!requireNamespace("wooldridge", quietly = TRUE)) install.packages("wooldridge")
+if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
+if (!requireNamespace("AER", quietly = TRUE)) install.packages("AER")
+
+# For robust standard errors and formatted tests:
+if (!requireNamespace("sandwich", quietly = TRUE)) install.packages("sandwich")
+if (!requireNamespace("lmtest", quietly = TRUE)) install.packages("lmtest")
+
+# For F-tests on excluded instruments:
+if (!requireNamespace("car", quietly = TRUE)) install.packages("car")
+
+library(wooldridge)
+library(dplyr)
+library(AER)
+library(sandwich)
+library(lmtest)
+library(car)
+```
+
+# Module 1: What is `AER::ivreg()`? (first-time tool)
+
+`ivreg()` fits an **instrumental variables** regression (2SLS under the hood).
+
+## Why do we need IV / 2SLS?
+
+OLS requires the regressor to be exogenous:
+
+\[
+E(u \mid x) = 0.
+\]
+
+If `educ` is correlated with the error term in the wage equation (e.g., ability/omitted factors), OLS is biased.  
+An **instrument** \(z\) must satisfy:
+
+1. **Relevance:** \(\mathrm{Cov}(z, x) \neq 0\)  
+2. **Exogeneity:** \(\mathrm{Cov}(z, u) = 0\)
+
+## `ivreg()` formula syntax
+
+```r
+ivreg(y ~ x1 + x2 + ... | z1 + z2 + ...)
+```
+
+- Left of `|` = regressors in the structural equation (endogenous + exogenous)
+- Right of `|` = instruments (must include all exogenous regressors as their own instruments, plus excluded instruments)
+
+Example (one endogenous regressor `educ`, one instrument `fatheduc`):
+
+```r
+ivreg(lwage ~ educ | fatheduc)
+```
+
+# 1. Data: MROZ working women (non-missing wages)
+
+## What the problem is asking
+
+We want the **causal** effect of education on log wage. We will:
+
+1. Estimate the OLS return to education.
+2. Re-estimate using IV, treating `educ` as endogenous.
+3. Compare OLS vs IV estimates.
+4. Understand the IV estimator in the just-identified case (covariance ratio).
+5. Understand 2SLS (first stage + second stage) and why naive second-stage SE are wrong.
+6. Estimate a richer 2SLS model with controls and multiple instruments.
+7. Add diagnostics: robust IV SE, Hausman-type endogeneity test, and first-stage strength checks.
+
+## Step-by-step plan
+
+1) Load `mroz` and keep observations with non-missing `lwage`.  
+2) Run OLS: `lm(lwage ~ educ)`.  
+3) Run IV: `ivreg(lwage ~ educ | fatheduc)`.  
+4) Compute IV slope manually: \(\widehat\beta_1 = \mathrm{Cov}(z,y)/\mathrm{Cov}(z,x)\).  
+5) Do 2SLS by hand: first stage `educ ~ fatheduc`, second stage `lwage ~ educhat` (for intuition).  
+6) Run the richer model:
+\[
+lwage = \beta_0 + \beta_1 educ + \beta_2 exper + \beta_3 exper^2 + u,
+\]
+instrumenting `educ` with parents’ education.  
+7) Add **robust IV SE**, **Hausman-type test**, and **first-stage F** strength checks.
+
+## Common pitfalls
+
+- **Instrument validity:** relevance is not enough; exogeneity is the hard part (cannot be fully tested).
+- **Naive 2SLS standard errors:** `lm(lwage ~ educhat)` reports invalid SE.
+- **Forgetting exogenous controls must appear on both sides of `|`** in `ivreg()`.
+- **Log wages interpretation:** 0.10 in log points is roughly a 10% wage change (approx.).
+
+## Load and filter
+
+```{r data_load}
+data("mroz")
+
+df <- mroz %>%
+  as_tibble() %>%
+  filter(!is.na(lwage))
+
+df %>% summarise(n = n())
+df %>% select(lwage, educ, exper, fatheduc, motheduc) %>% summary()
+```
+
+# 2. Baseline OLS: return to education
+
+```{r ols}
+ols1 <- lm(lwage ~ educ, data = df)
+summary(ols1)
+```
+
+# 3. IV (just-identified): instrument `educ` with `fatheduc`
+
+```{r iv_just_identified}
+iv1 <- ivreg(lwage ~ educ | fatheduc, data = df)
+summary(iv1)
+```
+
+# 4. Manual IV estimator (covariance ratio)
+
+In a just-identified model with one instrument \(z\) and one endogenous regressor \(x\), the IV slope is:
+
+\[
+\widehat\beta_{1,IV} = \frac{\widehat{\mathrm{Cov}}(z,y)}{\widehat{\mathrm{Cov}}(z,x)}.
+\]
+
+```{r manual_iv}
+beta1hat_iv <- with(df, cov(fatheduc, lwage) / cov(fatheduc, educ))
+beta0hat_iv <- with(df, mean(lwage) - beta1hat_iv * mean(educ))
+
+c(beta0hat_iv = beta0hat_iv, beta1hat_iv = beta1hat_iv)
+coef(iv1)
+```
+
+# 5. Manual 2SLS (intuition) and why naive SE are wrong
+
+## 5.1 First stage
+
+```{r first_stage}
+fs <- lm(educ ~ fatheduc, data = df)
+summary(fs)
+
+df <- df %>% mutate(educhat = fitted(fs))
+```
+
+## 5.2 Second stage (naive)
+
+```{r second_stage_naive}
+ss_naive <- lm(lwage ~ educhat, data = df)
+summary(ss_naive)
+```
+
+**Key point:** the coefficient is typically close to IV, but the **standard errors are not valid** for 2SLS because `educhat` is estimated. Use `ivreg()` for correct 2SLS inference.
+
+# 6. Richer 2SLS model (controls + multiple instruments)
+
+We estimate:
+
+\[
+lwage = \beta_0 + \beta_1 educ + \beta_2 exper + \beta_3 exper^2 + u,
+\]
+
+treating `educ` as endogenous, and using `fatheduc` and `motheduc` as excluded instruments.
+
+## Module 2: The `I()` function in formulas (first-time tool in this doc)
+
+In R formulas, `I()` means “interpret this literally as arithmetic.”  
+For example, `I(exper^2)` includes the variable \(exper^2\) in the regression.
+
+```{r iv_richer}
+iv2 <- ivreg(
+  lwage ~ educ + exper + I(exper^2) |
+    exper + I(exper^2) + fatheduc + motheduc,
+  data = df
+)
+
+summary(iv2)
+```
+
+# 7. Compare OLS vs IV education slopes
+
+```{r compare_slopes}
+c(
+  ols_educ = coef(ols1)["educ"],
+  iv1_educ = coef(iv1)["educ"],
+  iv2_educ = coef(iv2)["educ"]
+)
+```
+
+# 8. Getting the "correct" standard errors in IV
+
+## 8.1 What the problem is asking 
+
+You need standard errors that are valid for IV/2SLS. Two practical layers:
+
+1) **Correct 2SLS SE**: do not use the naive second-stage SE; use `ivreg()` output.  
+2) **Robust 2SLS SE** (recommended in applied work): allow heteroskedasticity using `sandwich`.
+
+## 8.2 Step-by-step plan
+
+1) Use `summary(iv2)` for conventional (homoskedastic) 2SLS SE.  
+2) Compute robust VCOV with `sandwich::vcovHC(iv2, type="HC1")`.  
+3) Print coefficient tests with robust SE using `lmtest::coeftest()`.
+
+## 8.3 Common pitfalls
+
+- Robust SE change **t statistics/p-values**, not coefficients.
+- HC0 vs HC1: HC1 is a common small-sample correction.
+- Don’t mix OLS robust SE with IV models: use `vcovHC()` on the **ivreg object**.
+
+## How to read the two outputs (conventional IV SE vs robust IV SE)
+
+You will often see two slightly different standard errors for the *same* IV coefficient estimates:
+
+- `summary(iv2)` reports **conventional 2SLS standard errors**, which rely on the homoskedasticity assumption.
+- `coeftest(iv2, vcov. = vcovHC(iv2, ...))` reports **robust (heteroskedasticity-consistent) IV standard errors**.
+
+**What is being compared?**  
+Not “IV vs non-IV.” The coefficient estimates \(\hat\beta\) are the same IV/2SLS estimates in both cases.  
+What changes is the **variance estimator** used for inference (SE, t-stat, p-value).
+
+**Which is more accurate?**
+- If the error variance is truly constant (homoskedastic), conventional SE can be more efficient (often smaller).
+- If heteroskedasticity is present (common in practice), robust SE are typically more reliable for inference.
+
+A common applied default is to **report robust IV SE (HC1)** unless the assignment explicitly asks for the homoskedastic version.
+
+
+## Module 3: What are `vcovHC()` and `coeftest()`? (first-time tools)
+
+### `sandwich::vcovHC()`
+Computes a heteroskedasticity-consistent covariance matrix for coefficient estimates.  
+You can apply it to `lm` and also to `ivreg` objects.
+
+### `lmtest::coeftest()`
+Prints coefficient tests using a user-supplied covariance matrix (e.g., robust VCOV).
+
+## 8.4 Robust IV standard errors (HC1)
+
+```{r robust_iv_se}
+robust_vcov_iv2 <- vcovHC(iv2, type = "HC1")
+
+# Robust coefficient table (large-sample reference by default)
+coeftest(iv2, vcov. = robust_vcov_iv2)
+```
+
+Optional: compare conventional vs robust SE:
+
+```{r compare_se}
+se_conventional <- sqrt(diag(vcov(iv2)))
+se_robust <- sqrt(diag(robust_vcov_iv2))
+
+cbind(se_conventional = se_conventional, se_robust = se_robust)
+```
+
+# 9. Hausman-type test for endogeneity (DWH / Wu–Hausman)
+
+## 9.1 What the problem is asking 
+
+We want to test whether `educ` behaves as **endogenous** in the wage equation.
+
+A Hausman-type test compares OLS and IV in a structured way. In `ivreg`, this is available as a **Wu–Hausman** (Durbin–Wu–Hausman) diagnostic.
+
+## 9.2 Step-by-step plan
+
+1) Estimate `iv2`.  
+2) Call `summary(iv2, diagnostics = TRUE)`.  
+3) Read the **Wu–Hausman** test:
+- If p-value is small: evidence that OLS is inconsistent (endogeneity), IV preferred.
+- If p-value is large: no strong evidence against exogeneity (OLS may be OK).
+
+## 9.3 Common pitfalls
+
+- This tests **endogeneity of the instrumented regressor(s)**, not instrument validity.
+- A weak instrument can make IV noisy; endogeneity tests can have low power.
+- “Fail to reject” does not prove exogeneity; it means insufficient evidence.
+
+## Module 4: What does `summary(ivreg_model, diagnostics = TRUE)` do?
+
+For `ivreg` objects, setting `diagnostics = TRUE` prints standard IV diagnostics, typically including:
+
+- **Weak instruments** (first-stage relevance, reported via an F-type statistic)
+- **Wu–Hausman** (endogeneity / Hausman-type test)
+- **Sargan** (overidentification test when overidentified; relies on homoskedasticity)
+
+```{r iv_diagnostics}
+summary(iv2, diagnostics = TRUE)
+```
+
+# 10. Checking IV strength for **iv2 (MROZ)**: first-stage F statistics
+
+In the richer MROZ IV model (`iv2`), we treat **educ** as endogenous and use **parents’ education** as excluded instruments:
+
+- Endogenous regressor: `educ`
+- Excluded instruments: `fatheduc`, `motheduc`
+- Exogenous controls (also included as instruments): `exper`, `exper^2`
+
+So the relevant first stage for **iv2** is:
+
+\[
+educ = \pi_0 + \pi_1 exper + \pi_2 exper^2 + \pi_3 fatheduc + \pi_4 motheduc + v.
+\]
+
+What we care about is whether the **excluded instruments** explain variation in `educ` *after controlling for* `exper` and `exper^2`.
+
+## 10.1 What the problem is asking
+
+We want evidence that the excluded instruments (`fatheduc`, `motheduc`) are correlated with `educ` **conditional on** the exogenous controls.
+
+A standard check is the **joint F test** in the first stage:
+
+\[
+H_0:\ \pi_3 = 0,\ \pi_4 = 0.
+\]
+
+This is the “instrument strength” check most often referenced by the rule of thumb “first-stage F > 10” (very rough guideline).
+
+## 10.2 Step-by-step plan
+
+1) Fit the first-stage regression used by `iv2`:
+\[
+educ = \pi_0 + \pi_1 exper + \pi_2 exper^2 + \pi_3 fatheduc + \pi_4 motheduc + v.
+\]
+2) Test the joint null that the **excluded instruments** have zero coefficients:
+\[
+H_0: \pi_3 = 0,\ \pi_4 = 0.
+\]
+3) Report the resulting F statistic and p-value.
+4) Interpret: larger F means stronger partial correlation between instruments and `educ`.
+
+## 10.3 Common pitfalls
+
+- Using the overall model F instead of the **excluded-instruments** joint F.
+- Forgetting to include exogenous controls in the first stage when they appear in the second stage.
+- Treating “F > 10” as a guarantee (it is not; it is a rule of thumb).
+
+## Module 5: What is `car::linearHypothesis()`? (first-time tool in this doc)
+
+`linearHypothesis()` conducts Wald/F tests of linear restrictions like:
+\[
+H_0:\ \pi_3 = 0,\ \pi_4 = 0.
+\]
+
+It is an easy way to obtain the **joint F test** for excluded instruments.
+
+## 10.4 First stage + excluded instruments joint F
+
+```{r first_stage_strength}
+fs2 <- lm(educ ~ exper + I(exper^2) + fatheduc + motheduc, data = df)
+summary(fs2)
+
+# Joint F test: excluded instruments are irrelevant
+linearHypothesis(fs2, c("fatheduc = 0", "motheduc = 0"))
+```
+
+# Wrap-up
+
+- **2SLS in R:** `AER::ivreg()`
+- **Correct SE:** use `ivreg()` (not naive second stage); add robust SE via `vcovHC()` + `coeftest()`
+- **Hausman-type test:** `summary(iv2, diagnostics = TRUE)` provides Wu–Hausman (endogeneity)
+- **Instrument strength:** check excluded-instruments joint F in the first stage (and the weak-instruments diagnostic)

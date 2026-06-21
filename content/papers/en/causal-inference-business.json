@@ -6,7 +6,7 @@
   "abstract": "An applied investigation into causal machine learning methods — Double Machine Learning, Generalized Random Forests, and the DoWhy framework — as tools for economic policy evaluation. Drawing on UofT's first delivery of the Causal ML course under Dr. Nazanin Khazra, this paper demonstrates how treatment effect estimation can move beyond correlation to support rigorous business decisions.",
   "tags": ["Causal Inference", "Double ML", "EconML", "Policy Evaluation"],
   "readingTime": 28,
-  "featured": true,
+  "featured": false,
   "coverImage": "/Eco/2_img.png",
   "pdfPath": "/Eco/2.pdf",
   "body": [

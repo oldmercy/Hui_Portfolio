@@ -1,0 +1,355 @@
+---
+title: "Tutorial 3 - t-tests, Confidence Intervals, and the OLS Estimator (with Simulation)"
+date: "ECO375"
+author: "Wenhui Xu"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+urlcolor: blue
+geometry: left=0.75in, right=0.75in, top=0.75in, bottom=0.75in
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# 0. Setup
+
+This tutorial builds two "muscle groups" that show up everywhere in econometrics:
+
+1) **One-sample t tests** (hypotheses, critical values, p-values, confidence intervals)  
+2) **Simple OLS regression** (run with `lm()`, then replicate coefficients using formulas)
+
+Datasets come from the `wooldridge` package:
+- `audit` (Urban Institute audit study example; variable `y = b - w`)
+- `ceosal1` (CEO salary vs. ROE example)
+
+```{r}
+# Install once if needed:
+# install.packages("wooldridge")
+
+library(wooldridge)
+
+data("audit")
+data("ceosal1")
+```
+
+# 1. One-sample t test in R
+
+## 1.1 Warm-up: t.test() on simulated data
+```{r}
+set.seed(1)
+x <- rnorm(100, mean = 0, sd = 1)
+```
+
+```{r}
+
+# Two-sided test of H0: mu = 0 at alpha = 0.05 
+# we know, sampling data X, are drawn from a distribution with true parameter mu_x = 0, sqrt(Var_x)=sd_x =1
+t.test(x)
+
+#t = 1.2123 <- test-statistic = (x_bar - mu_x )/se_x 
+#for two sided, reject if |t-statistic| >= Critical_value_0.05
+# 1.2123 < 1.96, fail to reject.
+# df = n-1
+# reject if p-value is smaller than alpha(5%)
+# CI x_hat +- t-statistic * critical value
+
+# One-sided test of H0: mu = 0 vs H1: mu < 0
+t.test(x, alternative = "less")
+
+# One-sided test with alpha = 0.10 (=> 90% CI)
+t.test(x, alternative = "less", conf.level = 0.90)
+
+# Test H0: mu = 4 (just to see the syntax)
+t.test(x, mu = 4)
+```
+
+## 1.2 DIY t test (to understand what t.test() is doing)
+
+### What we want our function to do
+Inputs:  
+- `x`: numeric sample  
+- `mu0`: hypothesized mean under H0  
+- `alpha`: significance level  
+- `alternative`: `"two.sided"`, `"less"`, or `"greater"`  
+
+Outputs (at least):  
+- t statistic, df, critical value, p-value, confidence interval, and a decision.
+
+```{r}
+my_ttest <- function(x, mu0 = 0, alpha = 0.05,
+                     alternative = c("two.sided", "less", "greater")) {
+
+  alternative <- match.arg(alternative)
+  x <- as.numeric(x)
+  n <- length(x)
+  if (n < 2) stop("Need at least 2 observations.")
+
+  xbar <- mean(x)
+  s <- sd(x)
+  se <- s / sqrt(n)
+  df <- n - 1
+
+  t_stat <- (xbar - mu0) / se
+
+  if (alternative == "two.sided") {
+    crit <- qt(1 - alpha/2, df)
+    p_value <- 2 * (1 - pt(abs(t_stat), df))
+    CI <- c(xbar - crit * se, xbar + crit * se)
+    decision <- if (abs(t_stat) > crit) "Reject H0" else "Fail to reject H0"
+
+  } else if (alternative == "less") {
+    crit <- qt(alpha, df)                 # left-tail critical value
+    p_value <- pt(t_stat, df)             # left-tail probability
+    CI <- c(-Inf, xbar + qt(1 - alpha, df) * se)  # one-sided CI (upper bound)
+    decision <- if (t_stat < crit) "Reject H0" else "Fail to reject H0"
+
+  } else { # alternative == "greater"
+    crit <- qt(1 - alpha, df)             # right-tail critical value
+    p_value <- 1 - pt(t_stat, df)         # right-tail probability
+    CI <- c(xbar - qt(1 - alpha, df) * se, Inf)  # one-sided CI (lower bound)
+    decision <- if (t_stat > crit) "Reject H0" else "Fail to reject H0"
+  }
+
+  list(
+    n = n,
+    df = df,
+    xbar = xbar,
+    s = s,
+    se = se,
+    t = t_stat,
+    crit_value = crit,
+    p_value = p_value,
+    CI = CI,
+    alternative = alternative,
+    alpha = alpha,
+    mu0 = mu0,
+    decision = decision
+  )
+}
+
+# quick check vs built-in
+my_ttest(x, mu0 = 0, alpha = 0.05, alternative = "two.sided")
+t.test(x, mu = 0, alternative = "two.sided")
+```
+
+# 2. Simulation: does the t statistic behave like a t distribution under H0?
+
+## Goal
+If the sample really comes from a normal distribution with mean mu0, then the one-sample t statistic
+\[
+t = \frac{\bar x - \mu_0}{s/\sqrt{n}}
+\]
+follows a \(t_{n-1}\) distribution.
+
+We'll check this by simulation.
+
+```{r}
+set.seed(123)
+
+R <- 5000
+n <- 10
+mu0 <- 1
+sigma <- 2
+alpha <- 0.07
+
+t_stats <- numeric(R)
+reject <- logical(R)
+
+for (r in 1:R) {
+  x_sim <- rnorm(n, mean = mu0, sd = sigma)  # H0 is true
+  out <- my_ttest(x_sim, mu0 = mu0, alpha = alpha, alternative = "two.sided")
+  t_stats[r] <- out$t
+  reject[r] <- (out$decision == "Reject H0")
+}
+
+# Compare histogram to theoretical t density
+hist(t_stats, probability = TRUE,
+     main = "Simulated t-statistic under H0 vs t(df)",
+     xlab = "t-statistic")
+curve(dt(x, df = n - 1), add = TRUE)
+
+# Empirical Type I error rate (should be close to alpha)
+#mean(reject)
+#table(reject)
+```
+
+# 3. Applied example: audit study (AUDIT)
+
+## Interpretation of y
+In this dataset, `y = b - w` is the difference in job-offer indicators between matched applications:
+- `b = 1` if the Black applicant gets an offer, `0` otherwise
+- `w = 1` if the White applicant gets an offer, `0` otherwise
+
+So if the average difference is negative, it suggests the Black applicant is less likely to receive an offer. <-discrimination
+
+## Test
+\[
+H_0:\mu_y = 0 \quad \text{vs} \quad H_1:\mu_y < 0.
+\]
+
+```{r}
+summary(audit$y)
+table(audit$y)
+
+hist(audit$y, main = "AUDIT: y = b - w", xlab = "y")
+```
+
+```{r}
+
+# Built-in
+t.test(audit$y, mu = 0, alternative = "less", conf.level = 0.95)
+#critical value for 1 sided 5% = -1.65
+#-0.1088- 0/ se(y)
+# DIY
+#my_ttest(audit$y, mu0 = 0, alpha = 0.05, alternative = "less")
+```
+
+# 4. OLS in simple regression (CEOSAL1)
+
+## 4.1 Run the regression with lm()
+
+We estimate:
+\[
+salary_i = \beta_0 + \beta_1\,roe_i + u_i.
+\]
+
+```{r}
+??ceosal1
+
+plot(salary ~ roe, data = ceosal1,
+     main = "CEOSAL1: Salary vs ROE",
+     xlab = "ROE", ylab = "Salary")
+
+ols_lm <- lm(salary ~ roe, data = ceosal1)
+#intercept <- beta_0_hat
+#roe <- beta_1_hat
+summary(ols_lm)
+
+abline(ols_lm)
+```
+
+```{r}
+ols_lm2 <- lm(salary ~ sales, data = ceosal1)
+summary(ols_lm2)
+```
+
+```{r}
+coef(ols_lm)
+coef(ols_lm2)
+```
+
+## 4.2 Replicate OLS coefficients using the formulas
+
+The OLS slope and intercept in simple regression are:
+\[
+\hat\beta_1 = \frac{\sum (x_i-\bar x)(y_i-\bar y)}{\sum (x_i-\bar x)^2},
+\qquad
+\hat\beta_0 = \bar y - \hat\beta_1 \bar x.
+\]
+
+```{r}
+my_ols <- function(x, y) {
+  x <- as.numeric(x)
+  y <- as.numeric(y)
+  if (length(x) != length(y)) stop("x and y must have the same length.")
+
+  xbar <- mean(x)
+  ybar <- mean(y)
+
+  dx <- x - xbar
+  dy <- y - ybar  # IMPORTANT: subtract mean(y), not mean(x)
+
+  beta1_hat <- mean(dx * dy) / mean(dx^2)
+  beta0_hat <- ybar - beta1_hat * xbar
+
+  c(beta0_hat = beta0_hat, beta1_hat = beta1_hat)
+}
+
+my_ols(ceosal1$roe, ceosal1$salary)
+coef(ols_lm)
+```
+
+# 5. Simulation: sampling variation of OLS estimates (complete version)
+
+## DGP
+We simulate data from:
+\[
+y = \beta_0 + \beta_1 x + u,
+\quad x \sim N(0,1),\ u \sim N(0,1),\ x \perp u.
+\]
+
+Then we repeat the sampling process many times and look at the distribution of $\hat\beta_0$ and $\hat\beta_1$.
+
+```{r}
+set.seed(123)
+
+R <- 5000
+n <- 100
+beta0 <- 1
+beta1 <- 2
+beta0_hat <- numeric(R)
+beta1_hat <- numeric(R)
+
+for (r in 1:R) {
+  x_sim <- rnorm(n)
+  u_sim <- rnorm(n)
+  y_sim <- beta0 + beta1 * x_sim + u_sim
+
+  b <- my_ols(x_sim, y_sim)
+  beta0_hat[r] <- b["beta0_hat"]
+  beta1_hat[r] <- b["beta1_hat"]
+}
+
+c(mean_beta0 = mean(beta0_hat), sd_beta0 = sd(beta0_hat),
+  mean_beta1 = mean(beta1_hat), sd_beta1 = sd(beta1_hat))
+
+hist(beta1_hat, probability = TRUE,
+     main = "Sampling distribution of beta1_hat",
+     xlab = "beta1_hat")
+curve(dnorm(x, mean = beta1, sd = sd(beta1_hat)), add = TRUE)
+
+hist(beta0_hat, probability = TRUE,
+     main = "Sampling distribution of beta0_hat",
+     xlab = "beta0_hat")
+curve(dnorm(x, mean = beta0, sd = sd(beta0_hat)), add = TRUE)
+```
+
+## Optional intuition: draw multiple fitted lines
+
+```{r}
+set.seed(123)
+
+R_lines <- 30
+plot(NULL, xlim = c(-3, 3), ylim = c(beta0 - 6, beta0 + 6),
+     xlab = "x", ylab = "y",
+     main = "Different samples -> different fitted OLS lines")
+
+# True line
+abline(a = beta0, b = beta1, lwd = 2)
+
+for (r in 1:R_lines) {
+  x_sim <- rnorm(n)
+  u_sim <- rnorm(n)
+  y_sim <- beta0 + beta1 * x_sim + u_sim
+
+  b <- my_ols(x_sim, y_sim)
+  abline(a = b["beta0_hat"], b = b["beta1_hat"])
+}
+```
+
+# 6. Quick checklist (what you should be able to do)
+
+- Use `t.test()` correctly for one-sided and two-sided hypotheses.
+- Compute t statistics, critical values (`qt()`), and p-values (`pt()`) manually.
+- Explain why the simulated rejection rate under H0 is close to \(\\alpha\).
+- Run `lm()` and interpret the slope and intercept.
+- Reproduce OLS coefficients using the simple-regression formulas.
+- Use simulation to build intuition for sampling variability.

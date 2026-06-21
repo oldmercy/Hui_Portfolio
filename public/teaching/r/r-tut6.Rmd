@@ -1,0 +1,277 @@
+---
+title: "Tutorial 6: Multiple Regression + Inference (Chapter 3 C2 & Chapter 4 C1)"
+date: "ECO375"
+author: "Wenhui Xu"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+urlcolor: blue
+geometry: left=0.75in, right=0.75in, top=0.75in, bottom=0.75in
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Overview
+
+This tutorial covers:
+
+- **Chapter 3, Computer Exercise C2 (HPRICE1):** multiple regression, prediction, and residuals.
+- **Chapter 4, Computer Exercise C1 (VOTE1):** log-level model and testing a linear restriction.
+- Two supporting tools (used in the original script):
+  - VIF (variance inflation factor),
+  - Linear hypothesis testing (F tests).
+
+We will use the pipe operator `%>%` (from `dplyr`) for readability.
+
+```{r packages}
+if (!requireNamespace("wooldridge", quietly = TRUE)) install.packages("wooldridge")
+if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
+if (!requireNamespace("car", quietly = TRUE)) install.packages("car")
+
+library(wooldridge)
+library(dplyr)
+library(car)
+```
+
+# 1. Supporting tools (quick)
+
+## 1.1 VIF (Variance Inflation Factor)
+
+VIF for regressor j is:
+\[
+VIF_j = \frac{1}{1 - R_j^2},
+\]
+where \(R_j^2\) is from regressing \(x_j\) on the other regressors.
+
+```{r vif_demo}
+data("wage1")
+
+lm_wage1 <- lm(log(wage) ~ educ + exper + tenure, data = wage1)
+
+# VIFs
+vif(lm_wage1)
+
+# Example: compute R^2_j for educ and confirm VIF formula
+r2_educ <- summary(lm(educ ~ exper + tenure, data = wage1))$r.squared
+c(R2_educ = r2_educ, VIF_educ = 1/(1 - r2_educ))
+```
+
+## 1.2 Linear hypothesis tests (F-tests)
+
+A joint hypothesis like
+\[
+H_0: \beta_1 = 0, \; \beta_2 = 0, \; \beta_3 = 0
+\]
+is tested using an F-test.
+
+```{r ftest_demo}
+linearHypothesis(lm_wage1, c("educ = 0", "exper = 0", "tenure = 0"))
+```
+
+# 2. Chapter 3 — Computer Exercise C2 (HPRICE1)
+
+## 2.1 What the problem is asking 
+
+We estimate:
+\[
+price = \beta_0 + \beta_1\,sqrft + \beta_2\,bdrms + u,
+\]
+where **price is measured in thousands of dollars**.
+
+Tasks:
+1. Estimate the regression and write it in equation form.
+2. Interpret \(\hat\beta_2\): one more bedroom holding sqrft constant.
+3. Compute the predicted price change for adding a bedroom **and** 140 square feet.
+4. Report the percent variation in price explained by sqrft and bdrms (use \(R^2\)).
+5. Predict the selling price for the first house in the sample.
+6. Compute the residual for the first house and interpret underpaid vs overpaid.
+
+## 2.2 Step-by-step plan (how to solve it)
+
+1) Load `hprice1` and run `lm(price ~ sqrft + bdrms)`.  
+2) Extract coefficients, standard errors, n, and \(R^2\).  
+3) Keep track of units: changes in `price` are in **thousands of dollars** (multiply by 1000 for dollars).  
+4) Use linear prediction:
+\[
+\Delta \hat{price} = 140\,\hat\beta_1 + 1\cdot\hat\beta_2.
+\]
+5) Use `predict()` for the first house. Residual = actual − predicted.
+
+## 2.3 Common pitfalls
+
+- **Units mistake:** `price` is in thousands of dollars.
+- **R-squared choice:** the question asks “percent explained,” which is usually \(R^2\), not adjusted \(R^2\).
+- **Interpretation slip:** \(\hat\beta_2\) is “one more bedroom holding sqrft fixed.”
+
+## 2.4 Solution in R
+
+```{r c2_load}
+data("hprice1")
+hprice1 <- as_tibble(hprice1)
+
+hprice1 %>% select(price, sqrft, bdrms) %>% summary()
+```
+
+```{r c2_regression}
+fit_c2 <- lm(price ~ sqrft + bdrms, data = hprice1)
+summary(fit_c2)
+
+coef_c2 <- coef(fit_c2)
+se_c2 <- sqrt(diag(vcov(fit_c2)))
+n_c2 <- nobs(fit_c2)
+r2_c2 <- summary(fit_c2)$r.squared
+
+list(coef = coef_c2, se = se_c2, n = n_c2, r2 = r2_c2)
+```
+
+```{r c2_equation, results='asis'}
+cat(sprintf(
+  "Estimated equation (SE in parentheses):\n\nprice = %.3f (%.3f) + %.5f (%.5f)*sqrft + %.3f (%.3f)*bdrms\n\nn = %d,   R^2 = %.4f\n",
+  coef_c2[1], se_c2[1],
+  coef_c2[2], se_c2[2],
+  coef_c2[3], se_c2[3],
+  n_c2, r2_c2
+))
+```
+
+### (ii) One more bedroom (holding sqrft constant)
+
+```{r c2_part_ii}
+delta_one_bed_thousands <- coef_c2["bdrms"]
+delta_one_bed_dollars <- 1000 * delta_one_bed_thousands
+delta_one_bed_dollars
+```
+
+### (iii) One more bedroom + 140 square feet
+
+```{r c2_part_iii}
+delta_thousands <- 140 * coef_c2["sqrft"] + coef_c2["bdrms"]
+delta_dollars <- 1000 * delta_thousands
+delta_dollars
+```
+
+### (iv) Percent variation explained (R-squared)
+
+```{r c2_part_iv}
+r2_c2
+```
+
+### (v) Predicted selling price for the first house
+
+```{r c2_part_v}
+first_house <- hprice1[1, ]
+pred_first_thousands <- predict(fit_c2, newdata = first_house)
+pred_first_dollars <- 1000 * pred_first_thousands
+pred_first_dollars
+```
+
+### (vi) Residual for the first house; underpaid or overpaid?
+
+```{r c2_part_vi}
+actual_first_thousands <- first_house$price
+resid_first_thousands <- actual_first_thousands - pred_first_thousands
+resid_first_dollars <- 1000 * resid_first_thousands
+
+c(resid_thousands = resid_first_thousands, resid_dollars = resid_first_dollars)
+```
+
+Interpretation:
+- If residual < 0: actual price < predicted price → buyer paid less than predicted (underpaid relative to observables).
+- If residual > 0: buyer paid more than predicted (overpaid relative to observables).
+
+# 3. Chapter 4 — Computer Exercise C1 (VOTE1)
+
+## 3.1 What the problem is asking (plain English)
+
+We estimate:
+\[
+voteA = \beta_0 + \beta_1 \log(expendA) + \beta_2 \log(expendB) + \beta_3 prtystrA + u.
+\]
+
+Tasks:
+1. Interpret \(\beta_1\).
+2. State the null hypothesis that a 1% increase in A's spending is offset by a 1% increase in B's spending.
+3. Estimate the model and discuss whether A and B spending affect the outcome.
+4. Estimate a model that directly gives the t statistic for testing the null in (2) (two-sided).
+
+## 3.2 Step-by-step plan (how to solve it)
+
+1) Fit the model with OLS:
+`lm(voteA ~ log(expendA) + log(expendB) + prtystrA)`.
+
+2) Interpret log-level coefficients:
+- A 1% increase in spending changes log(spending) by about 0.01.
+- So \(\beta_1/100\) is approximately the percentage-point change in `voteA` from a 1% increase in `expendA`.
+
+3) Offset null:
+- “Offset” means the two 1% changes cancel:
+\[
+\beta_1 + \beta_2 = 0.
+\]
+
+4) Test properly:
+- Use `linearHypothesis()` to test \(\beta_1+\beta_2=0\), **or**
+- Reparameterize so one coefficient equals \(\beta_1+\beta_2\) and read its t statistic.
+
+## 3.3 Common pitfalls
+
+- **Log interpretation mistakes:** coefficients are tied to percentage changes, not dollar changes.
+- **Testing incorrectly:** you need the standard error of \(\hat\beta_1+\hat\beta_2\).
+- **Wrong-sided test:** part (iv) is two-sided.
+
+## 3.4 Solution in R
+
+```{r c1_load}
+data("vote1")
+vote1 <- as_tibble(vote1)
+
+vote1 %>% select(voteA, expendA, expendB, prtystrA) %>% summary()
+```
+
+```{r c1_model}
+fit_vote <- lm(voteA ~ log(expendA) + log(expendB) + prtystrA, data = vote1)
+summary(fit_vote)
+```
+
+### (ii) State and test the offset null: \(\beta_1 + \beta_2 = 0\)
+
+```{r c1_test_linearhypothesis}
+linearHypothesis(fit_vote, "log(expendA) + log(expendB) = 0")
+```
+
+### (iv) Reparameterize to get the t statistic directly
+
+Define:
+- \(z_1 = \log(expendA) - \log(expendB)\)
+- \(z_2 = \log(expendB)\)
+
+Then:
+\[
+\beta_1 \log(expendA) + \beta_2 \log(expendB)
+= \beta_1 z_1 + (\beta_1 + \beta_2) z_2.
+\]
+
+So the coefficient on \(z_2\) equals \(\beta_1 + \beta_2\).
+
+```{r c1_reparam}
+fit_vote_reparam <- lm(
+  voteA ~ I(log(expendA) - log(expendB)) + log(expendB) + prtystrA,
+  data = vote1
+)
+
+summary(fit_vote_reparam)
+```
+
+# Wrap-up
+
+- **Ch.3 C2:** multiple regression, units, prediction, residual interpretation.
+- **Ch.4 C1:** testing linear restrictions correctly (offset hypothesis).
+- **Tools:** VIF (diagnostic), `linearHypothesis()` (clean restriction tests).

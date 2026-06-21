@@ -39,6 +39,7 @@ export default function RootLayout({
         />
       </head>
       <body
+        suppressHydrationWarning
         className="min-h-screen flex flex-col"
         style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}
       >

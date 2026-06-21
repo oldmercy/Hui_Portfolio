@@ -1,0 +1,13 @@
+{
+  "slug": "gender-gap-math",
+  "title": "Gender Figures in Math: Do Female Math Teachers Impact Female Students' Outcomes?",
+  "category": "Economic Research",
+  "year": 2024,
+  "abstract": "An applied investigation into causal machine learning methods — Double Machine Learning, Generalized Random Forests, and the DoWhy framework — as tools for economic policy evaluation. Drawing on UofT's first delivery of the Causal ML course under Dr. Nazanin Khazra, this paper applies nine econometric and ML methods to a large-scale field experiment from rural China (N = 9,072), estimating the causal effect of female math teachers on female students' test scores. Across all models, female teachers close the gender gap in math achievement by approximately one-third — demonstrating how treatment effect estimation can move beyond correlation to support rigorous, evidence-based decisions.",
+  "tags": ["Causal Inference", "Machine Learning", "Gender Economics", "Education", "DML", "Causal Forest", "GRF"],
+  "readingTime": 20,
+  "featured": true,
+  "coverImage": "/ML/grf-female.png",
+  "pdfPath": "/Eco/gender-gap-math.pdf",
+  "body": []
+}

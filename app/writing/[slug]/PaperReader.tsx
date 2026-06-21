@@ -498,6 +498,22 @@ export default function PaperReader({ paper }: { paper: Paper }) {
                     isFirst={si === 0 && pi === 0}
                   />
                 ))}
+
+                {/* Optional bullet list */}
+                {section.items && section.items.length > 0 && (
+                  <ul className="my-4 flex flex-col gap-2" style={{ paddingLeft: "1.25rem" }}>
+                    {section.items.map((item, ii) => (
+                      <li key={ii} className="font-serif leading-relaxed" style={{ color: "var(--text-secondary)", listStyleType: "disc" }}>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {/* Optional closing paragraph after list */}
+                {section.closing && (
+                  <TabeParagraph text={section.closing} tabeActive={tabeActive} isFirst={false} />
+                )}
               </section>
             ))}
 
