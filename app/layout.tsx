@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "./components/nav/Navbar";
 import { ThemeProvider } from "./components/ThemeProvider";
+import GlobalTabe from "./components/GlobalTabe";
 import { getSiteContent } from "@/lib/site-content";
 
 const { metadata: meta, footer } = getSiteContent("en");
@@ -44,6 +45,7 @@ export default function RootLayout({
         style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}
       >
         <ThemeProvider>
+          <GlobalTabe />
           <Navbar />
           <main className="flex-1">{children}</main>
 

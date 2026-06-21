@@ -465,6 +465,7 @@ export default function PaperReader({ paper }: { paper: Paper }) {
           {/* Article */}
           <article
             ref={articleRef}
+            data-tabe-reader="true"
             className={`prose-reading max-w-[68ch] ${tabeActive ? "tabe-mode" : ""}`}
           >
             {/* Abstract */}
