@@ -468,6 +468,25 @@ export default function PaperReader({ paper }: { paper: Paper }) {
             data-tabe-reader="true"
             className={`prose-reading max-w-[68ch] ${tabeActive ? "tabe-mode" : ""}`}
           >
+            {/* TABE Accessibility Banner */}
+            <div
+              className="mb-8 p-4 border rounded"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-subtle)" }}
+            >
+              <p
+                className="text-xs md:text-sm font-sans mb-2"
+                style={{ color: "var(--accent)" }}
+              >
+                📖 Try TABE Reading Mode
+              </p>
+              <p
+                className="text-xs md:text-sm font-sans leading-relaxed"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Color highlights nouns, verbs, and more to help you read faster. Click "TABE on" button in the top-right to enable it.
+              </p>
+            </div>
+
             {/* Abstract */}
             <section className="mb-12 pb-8 border-b" style={{ borderColor: "var(--border)" }}>
               <p

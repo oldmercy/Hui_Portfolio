@@ -22,6 +22,16 @@ export default function GenderGapMathFullTextPage() {
         Wenhui Xu · 2026
       </p>
 
+      {/* TABE Accessibility Banner */}
+      <div className="mb-8 p-4 border rounded" style={{ borderColor: "var(--border)", backgroundColor: "color-mix(in srgb, var(--bg) 95%, var(--accent))" }}>
+        <p className="text-xs md:text-sm font-sans mb-2" style={{ color: "var(--accent)" }}>
+          📖 Try TABE Reading Mode
+        </p>
+        <p className="text-xs md:text-sm font-sans leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          Color highlights nouns, verbs, and more to help you read faster. Click "Aa Reading" in the navigation to try it.
+        </p>
+      </div>
+
       {/* Abstract */}
       <section className="mb-12 pb-12 border-b" style={{ borderColor: "var(--border)" }}>
         <h2 className="text-sm font-sans tracking-[0.18em] uppercase mb-4" style={{ color: "var(--text-tertiary)" }}>Abstract</h2>

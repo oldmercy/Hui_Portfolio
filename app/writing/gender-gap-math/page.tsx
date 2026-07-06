@@ -186,7 +186,7 @@ export default function GenderGapMathPage() {
             💡 Interactive Summary
           </p>
           <p className="text-sm font-sans leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-            This page presents an interactive exploration of six causal identification methods. Download the full paper below for complete technical details, formal proofs, and additional robustness checks.
+            This page presents an interactive exploration of six causal identification methods. Scroll to the bottom to <span style={{ color: "var(--accent)", fontWeight: "500" }}>view the complete paper</span> with full technical details, formal proofs, and additional robustness checks. You can also download the PDF or use TABE reading mode for enhanced accessibility.
           </p>
         </div>
 
