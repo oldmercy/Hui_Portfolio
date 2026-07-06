@@ -467,6 +467,26 @@ export default function GenderGapMathPage() {
         </div>
       </section>
 
+      {/* Full Text CTA */}
+      <section className="mt-16 md:mt-24 py-10 md:py-16 px-6 md:px-10 border rounded-lg" style={{ borderColor: "var(--accent)", backgroundColor: "color-mix(in srgb, var(--bg) 95%, var(--accent))" }}>
+        <div className="max-w-2xl">
+          <p className="text-xs font-sans tracking-[0.18em] uppercase mb-3" style={{ color: "var(--text-tertiary)" }}>Read the Full Paper</p>
+          <h3 className="text-lg md:text-xl font-serif font-light mb-4" style={{ color: "var(--text-primary)" }}>
+            Explore the complete technical analysis with full methodology, tables, and figures.
+          </h3>
+          <p className="text-sm md:text-base font-serif mb-6 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            This page showcases the identification spectrum framework with interactive model comparisons. The full text includes all mathematical notation, complete robustness checks, appendix tables, and detailed discussion of each causal method. You can also use TABE reading mode for enhanced accessibility.
+          </p>
+          <Link
+            href="/writing/gender-gap-math/full-text"
+            className="inline-flex items-center gap-2 text-sm md:text-base font-sans px-5 md:px-6 py-2.5 md:py-3 border font-medium transition-all duration-150 hover:shadow-lg"
+            style={{ borderColor: "var(--accent)", color: "white", backgroundColor: "var(--accent)" }}
+          >
+            View Full Paper →
+          </Link>
+        </div>
+      </section>
+
       {/* Back nav */}
       <div className="mt-8 md:mt-10 pt-4" style={{ borderColor: "var(--border)" }}>
         <Link
