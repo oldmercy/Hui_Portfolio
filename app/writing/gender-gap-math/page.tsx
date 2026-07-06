@@ -372,9 +372,6 @@ export default function GenderGapMathPage() {
             <div
               className={`grid gap-4 ${
                 model.images.length === 1 ? "grid-cols-1 max-w-lg" :
-                model.images.length === 2 ? "grid-cols-1 sm:grid-cols-2" :
-                model.images.length === 3 ? "grid-cols-1 sm:grid-cols-3" :
-                model.images.length >= 6 ? "grid-cols-2 sm:grid-cols-3" :
                 "grid-cols-1 sm:grid-cols-2"
               }`}
             >
