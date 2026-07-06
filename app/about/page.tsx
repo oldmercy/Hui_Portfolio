@@ -145,7 +145,7 @@ export default function AboutPage() {
               >
                 <h3
                   className="font-serif font-light mb-4"
-                  style={{ color: "var(--text-primary)", fontSize: "1.35rem", lineHeight: 1.15 }}
+                  style={{ color: "var(--accent)", fontSize: "1.35rem", lineHeight: 1.15 }}
                 >
                   {title}
                 </h3>
@@ -189,7 +189,7 @@ export default function AboutPage() {
               >
                 <h3
                   className="font-serif text-base"
-                  style={{ color: "var(--text-primary)" }}
+                  style={{ color: "var(--accent)" }}
                 >
                   {title}
                 </h3>
@@ -224,7 +224,7 @@ export default function AboutPage() {
                   className="py-6 border-b"
                   style={{ borderColor: "var(--border)" }}
                 >
-                  <h4 className="font-serif text-lg mb-2" style={{ color: "var(--text-primary)" }}>
+                  <h4 className="font-serif text-lg mb-2" style={{ color: "var(--accent)" }}>
                     {label}
                   </h4>
                   <p className="text-sm font-sans leading-relaxed" style={{ color: "var(--text-secondary)" }}>

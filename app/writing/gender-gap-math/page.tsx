@@ -8,43 +8,50 @@ const MODELS = [
   {
     id: "ols",
     label: "OLS",
-    full: "Linear Regression",
+    full: "Ordinary Least Squares with School Fixed Effects",
     method:
-      "Standard OLS with individual controls (baseline scores, age, SES, family background, class size, teacher experience and salary), school and county fixed effects, and standard errors clustered at the school level.",
+      "Linear regression with individual controls (baseline scores, age, SES, family background, class size, teacher experience and salary), school and county fixed effects, and standard errors clustered at the school level. Identifies treatment from the 12 schools with both male and female math teachers.",
     identification:
-      "Assumes no unobserved confounders correlated with teacher gender assignment conditional on controls and fixed effects.",
+      "Most conservative: assumes no unobserved confounders within schools where both teacher genders are present. Conditional independence on observed controls.",
     finding:
-      "Girls score 0.142 SD lower than boys (Base). When a girl has a female teacher, the gap closes by 37% — the gender-matching coefficient is +0.078 (p < 0.1). Boys with male teachers show a small negative effect (−0.052) that becomes insignificant once clustered SEs are applied.",
+      "Girls score 0.147 SD lower than boys. Female students with female teachers gain +0.077 SD compared to those with male teachers — closing roughly 37% of the baseline gap. Effect is underpowered (n.s.) due to limited identifying variation from only 12 mixed-teacher schools (N=475).",
     table: {
       headers: ["", "(1) Base", "(2) Gender-Matching"],
       rows: [
-        ["Female", "−0.142***", "−0.206***"],
-        ["", "(0.019)", "(0.047)"],
-        ["F-student × F-teacher", "—", "+0.078*"],
-        ["", "", "(0.047)"],
-        ["M-student × M-teacher", "—", "−0.052"],
-        ["", "", "(0.049)"],
+        ["Female", "−0.147***", "−0.209*"],
+        ["", "(0.019)", "(0.099)"],
+        ["F-student × F-teacher", "—", "+0.077"],
+        ["", "", "(0.097)"],
+        ["M-student × M-teacher", "—", "−0.051"],
+        ["", "", "(0.098)"],
         ["Observations", "7,373", "7,373"],
         ["R²", "0.476", "0.477"],
       ],
-      note: "SEs clustered at school level. * p<0.1  ** p<0.05  *** p<0.01",
+      note: "SEs clustered at school level. * p<0.1  ** p<0.05  *** p<0.01. Most design-transparent but least precise.",
     },
     images: [],
   },
   {
-    id: "regularization",
-    label: "Ridge & LASSO",
-    full: "Regularized Regression",
+    id: "dag",
+    label: "DAG",
+    full: "Directed Acyclic Graph (Backdoor Criterion)",
     method:
-      "Ridge (L2 penalty) shrinks all coefficients proportionally. LASSO (L1 penalty) allows coefficients to drop to zero. Both use five-fold cross-validation to select the optimal penalty λ.",
-    identification: "Same specification as OLS; regularization is a model-selection tool, not an identification strategy.",
+      "Constructs causal graph grouping confounders into four blocks: county-school fixed effects, individual ability (baseline scores, age), family investment (parents' education, SES), and classroom quality (teacher salary, experience, class size). Applies backdoor criterion to identify minimal sufficient adjustment set.",
+    identification:
+      "Unconfoundedness: no unobserved confounder affects both treatment and outcome conditional on the graph-defined adjustment set. Between-school comparison under explicit graphical assumptions.",
     finding:
-      "Ridge: optimal λ = 0.0152 — very small, suggesting all variables should be retained in both models. LASSO: optimal λ = 0.0016; in the gender-matching model, the male-student–male-teacher dummy nearly drops out, confirming its limited explanatory power found in OLS.",
+      "DAG backdoor gives +0.074 SD — nearly identical to OLS despite using broader between-school variation. The minimal adjustment set (student gender, teacher gender only) blocks all backdoor paths, yet delivers a similar estimate, validating directional consistency across different identifying approaches.",
+    table: {
+      headers: ["Treatment", "DAG Estimate"],
+      rows: [
+        ["Female", "−0.159"],
+        ["F-student × F-teacher", "+0.074"],
+        ["M-student × M-teacher", "−0.038"],
+      ],
+      note: "DAG backdoor linear regression. Minimal sufficient adjustment set: {student_female, teacher_female}.",
+    },
     images: [
-      { src: "/ML/reg-f-ridge-mse.png",   caption: "Ridge CV — Base model" },
-      { src: "/ML/reg-gm-ridge-mse.png",  caption: "Ridge CV — Gender-Matching model" },
-      { src: "/ML/reg-f-lasso-mse.png",   caption: "LASSO CV — Base model" },
-      { src: "/ML/reg-gm-lasso-mse.png",  caption: "LASSO CV — Gender-Matching model" },
+      { src: "/DAG/dag_simplified.png", caption: "Simplified Directed Acyclic Graph — red lines show backdoor paths" },
     ],
   },
   {
@@ -52,140 +59,90 @@ const MODELS = [
     label: "IPW",
     full: "Inverse Propensity Score Weighting",
     method:
-      "Estimates the Average Treatment Effect (ATE) by reweighting observations by the inverse of the estimated propensity score. A positivity check confirms sufficient overlap in treatment probability distributions.",
+      "Models the probability of gender matching (propensity score) using L2-regularized logistic regression. Reweights the sample so treated and control students are comparable by construction. Average Treatment Effect (ATE) is the weighted mean outcome difference.",
     identification:
-      "Requires conditional independence: Y₁, Y₀ ⊥ T | X. Overlap plot shows moderate overlap — assumption is plausible.",
+      "Conditional independence (CIA): Y₁, Y₀ ⊥ T | X. Requires that observed covariates absorb selection bias. Balance check (F=0.97, p=0.44) and propensity overlap plots validate assumptions.",
     finding:
-      "ATE = 0.071 for girls with female teachers — closely replicating the OLS estimate and providing non-parametric support for the gender-matching effect.",
+      "ATE = +0.098 SD (95% CI: 0.075–0.172) — first estimate with a confidence interval excluding zero. Validates non-parametric robustness of the gender-matching signal beyond the linear OLS framework.",
+    table: {
+      headers: ["Estimate", "Value"],
+      rows: [
+        ["ATE (F-student × F-teacher)", "+0.098 SD"],
+        ["95% CI", "(0.075, 0.172)"],
+        ["Significance", "✓ p < 0.05"],
+        ["Propensity Model", "L2-regularized logistic"],
+      ],
+      note: "Gains precision by using broader between-school comparison under CIA.",
+    },
     images: [
-      { src: "/ML/ipw-overlap.png", caption: "Propensity score overlap: treated vs. control" },
+      { src: "/IPW/overlap.png", caption: "Propensity score overlap — no extreme weights" },
     ],
   },
   {
-    id: "tree",
-    label: "Ensemble Trees",
-    full: "Decision Tree & Ensemble Methods",
+    id: "dr",
+    label: "Doubly Robust",
+    full: "Augmented Inverse Propensity Weighting (AIPW)",
     method:
-      "A regression tree establishes baseline feature importance. Three ensemble variants — Regression Tree, Bagging, and Gradient Boosting — are compared by tuned MSE. Gradient Boosting is selected for downstream ML models.",
-    identification: "Predictive model; no causal identification claim. Used for feature importance and model selection.",
-    finding:
-      "Baseline achievement scores dominate predictions (importance: 0.409 + 0.154). SES, teacher salary, and class size follow. 'Female' alone ranks 10th — confirming gender gap is driven by context, not fixed ability. Boosting MSE = 0.535 (best among the three).",
-    table: {
-      headers: ["Model", "Tuned MSE"],
-      rows: [
-        ["Regression Tree", "0.655"],
-        ["Bagging", "0.565"],
-        ["Boosting (selected)", "0.535"],
-      ],
-      note: null,
-    },
-    images: [
-      { src: "/ML/tree-regression.png", caption: "Regression Tree — root split on baseline achievement" },
-    ],
-  },
-  {
-    id: "dag",
-    label: "DAG",
-    full: "Direct Acyclic Graphs",
-    method:
-      "Constructs a causal DAG grouping confounders into four blocks: county-school fixed effects, individual ability (baseline scores, age), family investment (parents' education, SES), and classroom quality (teacher salary, experience, class size). Backdoor criterion identifies the causal effect.",
+      "Combines IPW with an outcome model: consistent if either the propensity score OR the outcome model is correctly specified. Uses the same regularized propensity score as IPW, plus separate outcome models fit on treated and control subsamples.",
     identification:
-      "Unconfoundedness conditional on the four confounder blocks. The RCT assignment from the original study is included as an effect modifier.",
+      "Same as IPW: conditional independence and positivity. Double protection: robustness to misspecification of one component.",
     finding:
-      "Under the DAG framework the gender gap (−0.159) is slightly larger than OLS. The female-teacher effect (+0.120) almost entirely eliminates the gap — stronger than the OLS estimate of +0.078.",
+      "ATE = +0.087 SD — positioned between IPW (+0.098) and OLS/DAG (+0.074–0.077), as expected when averaging information from both propensity and outcome surfaces. Wide confidence interval (95% CI: −0.26, +0.44) reflects high variance when fitting outcome models across 200+ school dummies.",
     table: {
-      headers: ["Treatment", "Estimate"],
+      headers: ["Estimate", "Value"],
       rows: [
-        ["Female", "−0.159"],
-        ["F-student × F-teacher", "+0.120"],
-        ["M-student × M-teacher", "−0.038"],
+        ["ATE (F-student × F-teacher)", "+0.087 SD"],
+        ["95% CI", "(−0.257, 0.444)"],
+        ["Significance", "✗"],
+        ["Identification", "CIA + Positivity"],
       ],
-      note: "DAG backdoor linear regression estimates",
+      note: "Provides a robustness check but does not independently sharpen precision.",
     },
-    images: [
-      { src: "/ML/dag.png", caption: "Simplified DAG (original with all nodes in appendix)" },
-    ],
+    images: [],
   },
   {
     id: "learners",
     label: "Meta Learners",
-    full: "S / T / X Learners",
+    full: "T-Learner (Treatment Learner)",
     method:
-      "Three meta-learner specifications (S, T, X) estimated within the DAG framework. Cumulative gain plots evaluate model fit and surface treatment effect heterogeneity.",
-    identification: "Inherits the DAG identification strategy.",
-    finding:
-      "S-learner outperforms: up to 50% of the female student population realises a large gain from having a female teacher; the benefit fades for the remaining half. Point estimates are stable across all three learners (ATE ≈ 0.123 for F-student × F-teacher). T and X learners show signs of overfitting.",
-    table: {
-      headers: ["", "S-Learner", "T-Learner", "X-Learner"],
-      rows: [
-        ["Female", "−0.158", "−0.159", "−0.159"],
-        ["F-student × F-teacher", "+0.123", "+0.124", "+0.124"],
-        ["M-student × M-teacher", "−0.042", "−0.043", "−0.043"],
-      ],
-      note: null,
-    },
-    images: [
-      { src: "/ML/learner-s.png", caption: "S-Learner cumulative gain" },
-      { src: "/ML/learner-t.png", caption: "T-Learner cumulative gain" },
-      { src: "/ML/learner-x.png", caption: "X-Learner cumulative gain" },
-    ],
-  },
-  {
-    id: "drl",
-    label: "Doubly Robust",
-    full: "Doubly Robust Learning",
-    method:
-      "DR estimator is consistent if either the propensity score or the outcome model is correctly specified — offering robustness to one misspecification. A policy tree on estimated CATEs identifies the strongest predictor of treatment effect heterogeneity.",
-    identification: "Requires correct specification of at least one of: propensity score model or conditional outcome model.",
-    finding:
-      "F-student × F-teacher ATE = 0.126 — consistent with other estimates. Teacher salary is the first split in the policy tree: salary ≤ 3,362 separates the population with the largest predicted treatment benefit. Higher salary correlates with higher treatment effect.",
-    table: {
-      headers: ["Treatment", "DR Estimate"],
-      rows: [
-        ["Female", "−0.237"],
-        ["F-student × F-teacher", "+0.126"],
-        ["M-student × M-teacher", "−0.099"],
-      ],
-      note: "DR estimates under the DAG framework",
-    },
-    images: [
-      { src: "/ML/drl-policytree.png", caption: "Policy tree — teacher salary is the primary CATE splitter" },
-    ],
-  },
-  {
-    id: "grf",
-    label: "Causal Forest",
-    full: "Generalised Random Forest (GRF)",
-    method:
-      "Causal forest splits trees to maximise heterogeneity in treatment effects rather than prediction error, with no imposed functional form. Variable importance ranks predictors by their contribution to treatment effect heterogeneity.",
+      "Flexible ML approach: fits separate outcome models on treated and control arms independently, then differences them to estimate CATE. Uses gradient boosting as the base learner within the DAG framework (same minimal adjustment set: student and teacher gender only).",
     identification:
-      "Requires unconfoundedness (Y₁, Y₀ ⊥ T | X) — propensity score not directly modelled here, which is the model's key limitation in this setting.",
+      "Inherits the DAG identification strategy. More flexible functional form than linear regression.",
     finding:
-      "Classroom factors dominate heterogeneity: teacher experience, class size, and base salary rank highest in variable importance — consistent with the policy tree finding. The F-student × F-teacher treatment effect distribution is skewed positive; M-student × M-teacher is centred near zero, explaining why its point ATE is small and insignificant.",
-    images: [
-      { src: "/ML/grf-var-importance.png", caption: "GRF variable importance — classroom factors lead" },
-      { src: "/ML/grf-ff.png",             caption: "Treatment effect: F-student × F-teacher" },
-      { src: "/ML/grf-mm.png",             caption: "Treatment effect: M-student × M-teacher" },
-      { src: "/ML/grf-female.png",         caption: "Treatment effect: Female (gender gap)" },
-      { src: "/ML/grf-ff-dist.png",        caption: "CATE distribution: F-student × F-teacher" },
-      { src: "/ML/grf-mm-dist.png",        caption: "CATE distribution: M-student × M-teacher" },
-      { src: "/ML/grf-female-dist.png",    caption: "CATE distribution: Female" },
-    ],
+      "T-learner ATE = +0.085 SD — inside the conservative range (+0.074 to +0.098 SD). Sign and magnitude consistent across methods, supporting directional robustness. (Note: Meta-learners lack valid confidence intervals; reported for sign and magnitude only.)",
+    table: {
+      headers: ["Learner", "ATE (SD)", "Interpretation"],
+      rows: [
+        ["T-Learner (tuned)", "+0.085", "Inside conservative range"],
+        ["S-Learner (pooled)", "−0.004", "Weak treatment shrunk away"],
+        ["X-Learner", "+0.042", "Smaller but positive"],
+      ],
+      note: "No valid confidence intervals for meta-learners. T-learner preferred: keeps treatment arms separate.",
+    },
+    images: [],
   },
   {
     id: "dml",
     label: "Double ML",
-    full: "Double Machine Learning",
+    full: "Debiased Machine Learning with Causal Forest",
     method:
-      "Debiased ML (Chernozhukov et al.) uses cross-fitting and residual-on-residual regression to remove regularisation bias. Linear DML and Causal Forest DML are compared for subgroup analysis by teacher salary.",
+      "Uses cross-fitting and residual-on-residual regression to remove regularization bias. Both outcome Y and treatment T are first residualized via flexible learners (L2-regularized logistic regression for propensity, gradient boosting for outcome). CausalForestDML then estimates treatment effects and heterogeneity nonparametrically.",
     identification:
-      "Requires unconfoundedness. Caveat: treatment assignment is not randomised in this dataset, so ATE and CATE estimates carry selection bias — results are indicative, not causal.",
+      "Unconfoundedness required. Uses richest control set (student gender, male-male dummy, school and county dummies all together). Regularization prevents separation; identifying assumption still relies on CIA across schools.",
     finding:
-      "Linear DML produces low-variance ITEs; Causal Forest DML captures richer heterogeneity. Linear model slightly outperforms on MSE but CF DML is preferred for heterogeneous effect estimation. Overall, both models suggest data does not require a complex functional form — consistent with S-learner's superior fit.",
+      "LinearDML: +0.222 SD. SparseLinearDML: +0.213 SD. CausalForestDML: +0.230 SD (95% CI: 0.214–0.247) — all significant. Larger than conservative range (+0.074–0.098 SD) due to flexible nuisance estimation. Heterogeneity analysis reveals non-monotonic pattern by teacher salary (see next section).",
+    table: {
+      headers: ["Specification", "ATE (SD)", "95% CI"],
+      rows: [
+        ["LinearDML", "+0.222", "(0.066, 0.377)"],
+        ["SparseLinearDML", "+0.213", "(0.058, 0.369)"],
+        ["CausalForestDML", "+0.230", "(0.214, 0.247)"],
+      ],
+      note: "Upper-range evidence under stronger modeling assumptions. Used for heterogeneity analysis.",
+    },
     images: [
-      { src: "/ML/dml-models.png",      caption: "LinearDML vs. CausalForest DML — model comparison" },
-      { src: "/ML/dml-ite.png",         caption: "Individual treatment effects (Linear DML)" },
-      { src: "/ML/dml-causalforest.png", caption: "CausalForest DML — heterogeneous ITEs" },
+      { src: "/DML/causalforest_binned.png", caption: "CATE by baseline score (roughly flat)" },
+      { src: "/DML/cate_vs_salary.png", caption: "CATE by teacher salary (V-shaped: low +0.45 SD, high +0.87 SD)" },
     ],
   },
 ] as const;
@@ -201,7 +158,7 @@ export default function GenderGapMathPage() {
     <div className="max-w-5xl mx-auto px-6 pb-32">
 
       {/* Header */}
-      <div className="pt-16 pb-10 border-b" style={{ borderColor: "var(--border)" }}>
+      <div className="pt-8 pb-6 md:pt-16 md:pb-10 border-b" style={{ borderColor: "var(--border)" }}>
         <div className="flex items-center gap-2 mb-4 text-xs font-sans" style={{ color: "var(--text-tertiary)" }}>
           <Link href="/writing" className="hover:text-[var(--accent)] transition-colors link-underline">Writing</Link>
           <span>/</span>
@@ -209,25 +166,24 @@ export default function GenderGapMathPage() {
         </div>
         <h1
           className="font-serif font-light mb-4"
-          style={{ fontSize: "clamp(1.8rem, 4vw, 3rem)", lineHeight: 1.1, letterSpacing: "-0.025em", color: "var(--text-primary)" }}
+          style={{ fontSize: "clamp(1.5rem, 4vw, 3rem)", lineHeight: 1.1, letterSpacing: "-0.025em", color: "var(--text-primary)" }}
         >
           Gender Figures in Math: Do Female Math Teachers Impact Female Students' Outcomes?
         </h1>
-        <p className="font-serif mb-6 max-w-[60ch]" style={{ color: "var(--text-secondary)", fontSize: "1.0625rem" }}>
-          An applied investigation into causal machine learning methods — Double Machine Learning, Generalized Random
-          Forests, and the DoWhy framework — as tools for economic policy evaluation. Drawing on UofT's first delivery
-          of the Causal ML course under Dr. Nazanin Khazra, this paper applies nine econometric and ML methods to a
-          large-scale field experiment from rural China (N&nbsp;=&nbsp;9,072), estimating the causal effect of female
-          math teachers on female students' test scores. Across all models, female teachers close the gender gap in math
-          achievement by approximately one-third — demonstrating how treatment effect estimation can move beyond
-          correlation to support rigorous, evidence-based decisions.
+        <p className="font-serif mb-6 text-sm md:text-base" style={{ color: "var(--text-secondary)", lineHeight: "1.65" }}>
+          Women's underrepresentation in STEM is partly rooted in math performance gaps that emerge early and persist. This
+          paper investigates whether assigning female teachers to female students narrows this gap, using observational data
+          from 214 rural Chinese schools (N&nbsp;=&nbsp;9,072). Rather than claiming a single "correct" estimate, I adopt an
+          identification spectrum framework: deploying six causal methods ranging from conservative within-school comparisons
+          (+0.077 SD) to flexible machine learning approaches (+0.230 SD). The consistent positive direction across
+          methods—despite different baselines and identification assumptions—provides robust evidence that gender matching
+          closes roughly 40% of the baseline gap.
         </p>
         <div className="flex flex-wrap items-center gap-4">
           <span className="text-sm font-sans" style={{ color: "var(--text-tertiary)" }}>Wenhui Xu · 2024</span>
           <a
-            href="/Eco/gender-gap-math.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/papers/gender-gap-math.pdf"
+            download
             className="inline-flex items-center gap-1.5 text-xs font-sans px-3 py-1.5 border transition-colors duration-150 hover:border-[var(--accent)] hover:text-[var(--accent)]"
             style={{ borderColor: "var(--border-strong)", color: "var(--text-secondary)" }}
           >
@@ -246,41 +202,68 @@ export default function GenderGapMathPage() {
       </div>
 
       {/* Data Section */}
-      <section className="py-10 border-b" style={{ borderColor: "var(--border)" }}>
+      <section className="py-6 md:py-10 border-b" style={{ borderColor: "var(--border)" }}>
         <p className="text-xs font-sans tracking-[0.18em] uppercase mb-3" style={{ color: "var(--text-tertiary)" }}>Data</p>
-        <h2 className="font-serif font-light mb-3" style={{ fontSize: "1.4rem", color: "var(--text-primary)" }}>
+        <h2 className="font-serif font-light mb-3 text-lg md:text-2xl" style={{ color: "var(--text-primary)" }}>
           Rural China Field Experiment, 2012–2014
         </h2>
-        <p className="font-serif leading-relaxed mb-6 max-w-[64ch]" style={{ color: "var(--text-secondary)" }}>
+        <p className="font-serif leading-relaxed mb-6 text-sm md:text-base" style={{ color: "var(--text-secondary)" }}>
           Data from a large-scale RCT across 216 schools in Shaanxi and Gansu provinces, originally designed to study
           teacher pay incentives. Students completed three standardised math tests; scores are normalised against a control
           group and expressed in standard deviations. This study extends the original by examining teacher gender effects.
           Only about 18% of female students were assigned a female math teacher, providing variation for identification.
         </p>
-        <div className="grid md:grid-cols-3 gap-4">
-          {[
-            { src: "/ML/sum-stats-1.png", caption: "Gender composition by pay-design group" },
-            { src: "/ML/sum-stats-2.png", caption: "Summary statistics — student characteristics" },
-            { src: "/ML/sum-stats-3.png", caption: "Mother's education × student outcomes" },
-          ].map((img) => (
-            <figure key={img.src} className="border" style={{ borderColor: "var(--border)" }}>
-              <img src={img.src} alt={img.caption} className="w-full" />
-              <figcaption className="px-3 py-2 text-2xs font-sans" style={{ color: "var(--text-tertiary)", borderTop: "1px solid var(--border)" }}>
-                {img.caption}
-              </figcaption>
-            </figure>
-          ))}
+        <figure className="border w-full md:max-w-[700px]" style={{ borderColor: "var(--border)" }}>
+          <img src="/graphs/balance_by_teacher_gender.png" alt="Balance check by teacher gender" className="w-full" />
+          <figcaption className="px-3 py-2 text-2xs font-sans" style={{ color: "var(--text-tertiary)", borderTop: "1px solid var(--border)" }}>
+            Balance check: baseline student characteristics by math teacher gender (within-school comparison shows no significant differences)
+          </figcaption>
+        </figure>
+      </section>
+
+      {/* Identification Spectrum Narrative */}
+      <section className="py-6 md:py-10 border-b" style={{ borderColor: "var(--border)" }}>
+        <p className="text-xs font-sans tracking-[0.18em] uppercase mb-3" style={{ color: "var(--text-tertiary)" }}>Identification Spectrum</p>
+        <h2 className="font-serif font-light mb-3 text-lg md:text-2xl" style={{ color: "var(--text-primary)" }}>
+          Why Six Methods? A Journey From Conservative to Flexible
+        </h2>
+        <p className="font-serif leading-relaxed mb-4 text-sm md:text-base" style={{ color: "var(--text-secondary)" }}>
+          Teacher-student gender assignment was not randomized, so identifying the causal effect requires strong assumptions.
+          Rather than choosing one assumption and defending it, this analysis uses an <strong>identification spectrum</strong>:
+          six methods ranging from maximally conservative to maximally flexible, each making different trade-offs between design
+          transparency and statistical power.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <div className="border p-3 md:p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-subtle)" }}>
+            <p className="text-2xs font-sans tracking-[0.14em] uppercase mb-2" style={{ color: "var(--text-tertiary)" }}>Conservative (Low Assumptions)</p>
+            <p className="font-serif text-xs md:text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              <strong>OLS</strong> uses only schools with both male and female teachers (N=475), avoiding across-school selection bias.
+              <strong>DAG</strong> and <strong>IPW</strong> broaden the comparison but rest more heavily on CIA.
+            </p>
+          </div>
+          <div className="border p-3 md:p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-subtle)" }}>
+            <p className="text-2xs font-sans tracking-[0.14em] uppercase mb-2" style={{ color: "var(--text-tertiary)" }}>Flexible (Higher Assumptions)</p>
+            <p className="font-serif text-xs md:text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              <strong>Meta Learners</strong> and <strong>DML</strong> use the full control set and flexible residualization,
+              recovering larger effect estimates and rich heterogeneity analysis.
+            </p>
+          </div>
         </div>
+        <p className="font-serif leading-relaxed mt-6" style={{ color: "var(--text-secondary)" }}>
+          The key finding is <strong>directional consistency</strong>: across all six methods, the effect of female-female matching
+          is positive. The magnitude varies (+0.074 to +0.230 SD depending on assumptions), but the sign does not. This consistency
+          is the robustness claim.
+        </p>
       </section>
 
       {/* Model Showcase */}
-      <section className="pt-10">
+      <section className="pt-6 md:pt-10">
         <p className="text-xs font-sans tracking-[0.18em] uppercase mb-2" style={{ color: "var(--text-tertiary)" }}>
-          Model Analysis
+          Method Details
         </p>
-        <p className="font-serif mb-6 max-w-[56ch]" style={{ color: "var(--text-secondary)" }}>
-          Nine methods are applied to the same research question. Select a model to see the specification, identification
-          strategy, and key results.
+        <p className="font-serif mb-6 text-sm md:text-base" style={{ color: "var(--text-secondary)" }}>
+          Select a method below to see the specification, identification assumptions, and results. Methods are ordered from most
+          conservative to most flexible.
         </p>
 
         {/* Tab bar */}
@@ -308,7 +291,7 @@ export default function GenderGapMathPage() {
         </div>
 
         {/* Active model panel */}
-        <div key={active} className="animate-fade-up border p-6 md:p-8" style={{ animationDuration: "200ms", borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+        <div key={active} className="animate-fade-up border p-4 md:p-6 lg:p-8" style={{ animationDuration: "200ms", borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
           {/* Method label + heading */}
           <div className="mb-6">
             <span
@@ -412,38 +395,75 @@ export default function GenderGapMathPage() {
       </section>
 
       {/* Discussion */}
-      <section className="mt-16 pt-10 border-t" style={{ borderColor: "var(--border)" }}>
+      <section className="mt-10 md:mt-16 pt-6 md:pt-10 border-t" style={{ borderColor: "var(--border)" }}>
         <p className="text-xs font-sans tracking-[0.18em] uppercase mb-3" style={{ color: "var(--text-tertiary)" }}>Discussion</p>
-        <div className="grid md:grid-cols-2 gap-10">
-          <div>
-            <h3 className="font-serif font-semibold mb-3" style={{ fontSize: "1.1rem", color: "var(--text-primary)" }}>
-              Consistent signal, heterogeneous magnitude
-            </h3>
-            <p className="font-serif leading-relaxed text-sm" style={{ color: "var(--text-secondary)" }}>
-              Across all nine models, female students benefit significantly from female math teachers — reducing the gender
-              gap by roughly one-third. The effect is not uniform: teacher salary and classroom quality amplify it
-              (policy tree, causal forest), while boys with male teachers show a small, generally insignificant negative
-              effect.
-            </p>
-          </div>
-          <div>
-            <h3 className="font-serif font-semibold mb-3" style={{ fontSize: "1.1rem", color: "var(--text-primary)" }}>
-              Limitations & model-specific caveats
-            </h3>
-            <p className="font-serif leading-relaxed text-sm" style={{ color: "var(--text-secondary)" }}>
-              Treatment assignment is not randomised within this study, so DML estimates carry selection bias. The
-              causal forest and DAG estimates assume unconfoundedness conditional on observed controls. Ridge and LASSO
-              confirm that a parsimonious specification is appropriate — no complex functional form is needed.
-            </p>
-          </div>
+
+        <div className="mb-8 md:mb-10">
+          <h3 className="font-serif font-semibold mb-3 text-base md:text-lg" style={{ color: "var(--text-primary)" }}>
+            Method convergence supports a causal interpretation
+          </h3>
+          <p className="font-serif leading-relaxed mb-4 text-sm md:text-base" style={{ color: "var(--text-secondary)" }}>
+            The disciplined range from conservative methods (OLS, DAG, IPW, DR) clusters around <strong>+0.074 to +0.098 SD</strong>.
+            Despite different baselines, identification strategies, and control sets — moving from within-school comparisons
+            to graph-based adjustment to propensity-score reweighting — all methods point in the same positive direction.
+            This consistency across independent identification assumptions strengthens the causal claim: female-female teacher
+            matching does appear to narrow the gender gap, not as an artifact of any single methodological choice.
+          </p>
+        </div>
+
+        <div className="mb-8 md:mb-10">
+          <h3 className="font-serif font-semibold mb-3 text-base md:text-lg" style={{ color: "var(--text-primary)" }}>
+            Heterogeneity: the U-shaped salary pattern
+          </h3>
+          <p className="font-serif leading-relaxed mb-4 text-sm md:text-base" style={{ color: "var(--text-secondary)" }}>
+            The larger DML estimates (<strong>+0.213 to +0.230 SD</strong>) reveal substantial treatment-effect heterogeneity.
+            Teacher base salary emerges as the primary effect modifier: predicted benefits are largest in very low-salary
+            classrooms (<strong>CATE ≈ +0.45 SD</strong>) and very high-salary classrooms (<strong>CATE ≈ +0.87 SD</strong>),
+            but close to zero in the middle of the salary distribution.
+          </p>
+          <p className="font-serif leading-relaxed text-sm md:text-base" style={{ color: "var(--text-secondary)" }}>
+            This non-monotonic pattern suggests <strong>two distinct mechanisms</strong>: (1) In low-resource settings, female
+            math teachers may function as a powerful role model precisely because they are scarce; (2) In high-resource settings,
+            better-funded schools may amplify the benefits through higher teacher quality, student-teacher interaction, and less
+            gender-biased assessment. The data do not directly test these mechanisms, but the heterogeneity points toward context
+            mattering as much as matching itself.
+          </p>
+        </div>
+
+        <div>
+          <h3 className="font-serif font-semibold mb-3 text-base md:text-lg" style={{ color: "var(--text-primary)" }}>
+            Limitations and caveats
+          </h3>
+          <p className="font-serif leading-relaxed text-sm md:text-base" style={{ color: "var(--text-secondary)" }}>
+            Teacher-student gender assignment was not randomized, so identification relies entirely on conditional independence
+            (CIA): observed covariates must absorb all selection bias. Balance checks and pre-treatment timing support this assumption
+            within schools, but cross-school comparisons depend on stronger CIA. The short follow-up window (one school year) limits
+            inference to immediate achievement gains; longer-term effects on STEM persistence and career choices remain unknown.
+          </p>
+        </div>
+      </section>
+
+      {/* Keywords */}
+      <section className="mt-10 md:mt-16 pt-6 md:pt-8 border-t" style={{ borderColor: "var(--border)" }}>
+        <p className="text-xs font-sans tracking-[0.18em] uppercase mb-3" style={{ color: "var(--text-tertiary)" }}>Keywords</p>
+        <div className="flex flex-wrap gap-2">
+          {["gender gaps", "teacher-student matching", "causal inference", "heterogeneous treatment effects", "STEM education"].map((keyword) => (
+            <span
+              key={keyword}
+              className="text-xs md:text-sm font-sans px-2 md:px-3 py-1.5 border"
+              style={{ borderColor: "var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-subtle)" }}
+            >
+              {keyword}
+            </span>
+          ))}
         </div>
       </section>
 
       {/* Back nav */}
-      <div className="mt-16 pt-8 border-t" style={{ borderColor: "var(--border)" }}>
+      <div className="mt-8 md:mt-10 pt-4" style={{ borderColor: "var(--border)" }}>
         <Link
           href="/writing"
-          className="inline-flex items-center gap-2 text-sm font-sans transition-colors duration-150 hover:text-[var(--accent)]"
+          className="inline-flex items-center gap-2 text-xs md:text-sm font-sans transition-colors duration-150 hover:text-[var(--accent)]"
           style={{ color: "var(--text-tertiary)" }}
         >
           <span>←</span> All Papers

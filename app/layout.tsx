@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "./components/nav/Navbar";
 import { ThemeProvider } from "./components/ThemeProvider";
 import GlobalTabe from "./components/GlobalTabe";
+import { TABEAnnouncement } from "./components/TABEAnnouncement";
 import { getSiteContent } from "@/lib/site-content";
 
 const { metadata: meta, footer } = getSiteContent("en");
@@ -47,6 +48,7 @@ export default function RootLayout({
         <ThemeProvider>
           <GlobalTabe />
           <Navbar />
+          <TABEAnnouncement />
           <main className="flex-1">{children}</main>
 
           <footer

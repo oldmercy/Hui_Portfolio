@@ -111,12 +111,10 @@ export const siteContentEn = {
       ],
     },
     hobbies: [
-      { label: "Reading",   desc: "Fiction and non-fiction, especially economic history, social analysis, and literary fiction." },
-      { label: "Film",      desc: "Classic cinema and contemporary art-house; always looking for recommendations." },
-      { label: "Crochet",   desc: "A calming practice of turning yarn into something tangible and geometric." },
-      { label: "Gardening", desc: "Patient work — there is something satisfying about watching things grow." },
-      { label: "Cooking",   desc: "Hangzhou-inflected home cooking, occasionally ambitious, often practical." },
-      { label: "Cats",      desc: "A multi-cat household. They remain deeply unhelpful research assistants." },
+      { label: "Reading",   desc: "Voraciously curious about how people live, make decisions, and get shaped by experience. Biography, history, economics, fiction — whatever reveals something about human nature." },
+      { label: "Gaming",    desc: "Support main in Overwatch on my school's esports team. 500+ hours in Baldur's Gate 3, running multiple playthroughs because one path is never enough." },
+      { label: "Cooking",   desc: "Mostly Hangzhou home cooking. Living abroad means craving flavors you can't easily find, so I recreate them — a practical way to stay connected to home." },
+      { label: "Cats",      desc: "The emotional center of my household. They remain deeply unhelpful research assistants, but excellent company." },
     ],
   },
 
