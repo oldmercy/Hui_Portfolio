@@ -179,13 +179,24 @@ export default function GenderGapMathPage() {
           methods—despite different baselines and identification assumptions—provides robust evidence that gender matching
           closes roughly 40% of the baseline gap.
         </p>
+
+        {/* Interactive Summary Banner */}
+        <div className="mb-6 p-4 border rounded" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-subtle)" }}>
+          <p className="text-xs font-sans mb-2" style={{ color: "var(--text-tertiary)" }}>
+            💡 Interactive Summary
+          </p>
+          <p className="text-sm font-sans leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            This page presents an interactive exploration of six causal identification methods. Download the full paper below for complete technical details, formal proofs, and additional robustness checks.
+          </p>
+        </div>
+
         <div className="flex flex-wrap items-center gap-4">
-          <span className="text-sm font-sans" style={{ color: "var(--text-tertiary)" }}>Wenhui Xu · 2024</span>
+          <span className="text-sm font-sans" style={{ color: "var(--text-tertiary)" }}>Wenhui Xu · 2026</span>
           <a
             href="/papers/gender-gap-math.pdf"
             download
-            className="inline-flex items-center gap-1.5 text-xs font-sans px-3 py-1.5 border transition-colors duration-150 hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            style={{ borderColor: "var(--border-strong)", color: "var(--text-secondary)" }}
+            className="inline-flex items-center gap-1.5 text-xs font-sans px-4 py-2 border font-medium transition-all duration-150 hover:shadow-md"
+            style={{ borderColor: "var(--accent)", color: "white", backgroundColor: "var(--accent)" }}
           >
             <PdfIcon /> Download PDF
           </a>

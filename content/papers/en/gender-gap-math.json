@@ -2,7 +2,7 @@
   "slug": "gender-gap-math",
   "title": "Gender Figures in Math: Do Female Math Teachers Impact Female Students' Outcomes?",
   "category": "Economic Research",
-  "year": 2024,
+  "year": 2026,
   "abstract": "Women's underrepresentation in STEM is partly rooted in math performance gaps that emerge early and persist. This paper investigates whether assigning female teachers to female students narrows this gap, using observational data from 214 rural Chinese schools (N=9,072). Rather than claiming a single \"correct\" estimate, I adopt an identification spectrum framework: deploying six causal methods ranging from conservative within-school comparisons (+0.077 SD) to flexible machine learning approaches (+0.230 SD). The consistent positive direction across methods—despite different baselines and identification assumptions—provides robust evidence that gender matching closes roughly 40% of the baseline gap.",
   "tags": ["Causal Inference", "Machine Learning", "Gender Economics", "Education", "DML", "Causal Forest", "IPW"],
   "readingTime": 20,
