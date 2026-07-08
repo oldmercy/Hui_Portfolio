@@ -44,12 +44,11 @@ export type Paper = {
 // Add a new import here whenever a new paper is added.
 // ---------------------------------------------------------------------------
 
-// Gender Gap Math has a custom page at /app/writing/gender-gap-math/page.tsx,
-// so we exclude it from the papers list to avoid route conflicts with [slug].
+import enGenderMath from "@/content/papers/en/gender-gap-math.json";
 import enGender   from "@/content/papers/en/gender-expansive-early-education.json";
 
 const papersByLang: Record<string, Paper[]> = {
-  en: [enGender] as Paper[],
+  en: [enGenderMath, enGender] as Paper[],
   // zh: [zhCausal, zhPanel, zhConsumer],   ← uncomment when Chinese papers are ready
 };
 
