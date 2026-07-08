@@ -74,6 +74,13 @@ Pages import from here, never directly from `content/`:
 
 3. **Create custom page** at `app/writing/gender-gap-math/page.tsx` if needed. The page receives the slug via the directory name and can build a completely custom layout. Example: the gender-gap-math page has a tabbed model comparison interface.
 
+   **✋ CRITICAL: Register in `lib/custom-papers.ts`**
+   ```ts
+   // lib/custom-papers.ts
+   export const CUSTOM_PAPER_SLUGS = ["gender-gap-math"];
+   ```
+   This prevents the `[slug]` route from prerendering a static page for this slug, which would otherwise override your custom page. See "Routing Architecture" below.
+
 4. **Add assets** — Drop cover image and PDF into `public/Eco/` (or `Biz/`) at the paths specified in the JSON.
 
 ### If the paper is standard (no custom interactivity):
@@ -103,6 +110,38 @@ Language types and defaults are defined in `lib/i18n.ts` (`type Lang = "en" | "z
 Chinese placeholder files (`content/site/zh.ts`, `content/tools/zh.ts`, `content/papers/zh/`) are already structured and typed — just fill them in when content is ready.
 
 To surface a page in Chinese, call `getSiteContent("zh")` or `getAllPapers("zh")`. No routing structure exists yet; a future `/app/[lang]/...` can be added when a language switcher is implemented.
+
+---
+
+## Routing Architecture for Custom Papers
+
+**Problem:** Custom papers (like `gender-gap-math`) need special layouts that the generic `[slug]` reader can't provide. But Next.js's `generateStaticParams()` in `[slug]/page.tsx` would prerender a static page for every slug, potentially overriding custom pages.
+
+**Solution:** A two-tier system prevents conflicts:
+
+1. **Custom pages have file-system precedence** — `/app/writing/gender-gap-math/page.tsx` is matched before `/app/writing/[slug]/page.tsx`
+2. **But `generateStaticParams` must exclude custom slugs** — Otherwise, the `[slug]` route pregens a static HTML that can interfere with the custom page in edge cases
+
+**How it works:**
+
+```typescript
+// lib/custom-papers.ts — Single source of truth
+export const CUSTOM_PAPER_SLUGS = ["gender-gap-math"];
+
+// app/writing/[slug]/page.tsx — Excludes custom papers from SSG
+export function generateStaticParams() {
+  return getAllSlugs("en")
+    .filter((slug) => !CUSTOM_PAPER_SLUGS.includes(slug))
+    .map((slug) => ({ slug }));
+}
+```
+
+**When adding a new custom paper:**
+1. Create `/app/writing/<slug>/page.tsx` with your custom layout
+2. Add the slug to `CUSTOM_PAPER_SLUGS` in `lib/custom-papers.ts`
+3. Mark the JSON with `"body": []` (signals "this is custom-rendered")
+
+If you forget step 2, the `[slug]` route will prerender a generic page that shadows your custom one.
 
 ---
 
