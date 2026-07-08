@@ -10,9 +10,28 @@ async function tagText(text: string): Promise<TaggedToken[]> {
   const nlp = (await import("compromise")).default;
   const doc = nlp(text);
   const tokens: TaggedToken[] = [];
-  doc.terms().forEach((term: { text: () => string; has: (tag: string) => boolean }) => {
+
+  // Get both terms (words) and their positions to preserve punctuation/whitespace
+  const terms = doc.terms();
+  let lastEnd = 0;
+
+  terms.forEach((term: { text: () => string; has: (tag: string) => boolean; start: () => number; end: () => number }) => {
     const raw = term.text();
-    if (!raw.trim()) { tokens.push({ text: raw, tag: "plain" }); return; }
+    const start = term.start?.() ?? text.indexOf(raw, lastEnd);
+    const end = term.end?.() ?? start + raw.length;
+
+    // Preserve text between last term and this term (whitespace, punctuation)
+    if (start > lastEnd) {
+      const between = text.slice(lastEnd, start);
+      tokens.push({ text: between, tag: "plain" });
+    }
+
+    // Skip empty terms
+    if (!raw.trim()) {
+      lastEnd = end;
+      return;
+    }
+
     let tag: TaggedToken["tag"] = "plain";
     if (term.has("#Value") || term.has("#NumericValue") || /^\d[\d,\.%$]*$/.test(raw)) {
       tag = "num";
@@ -24,7 +43,14 @@ async function tagText(text: string): Promise<TaggedToken[]> {
       tag = "adj";
     }
     tokens.push({ text: raw, tag });
+    lastEnd = end;
   });
+
+  // Append any remaining text after the last term (trailing punctuation/whitespace)
+  if (lastEnd < text.length) {
+    tokens.push({ text: text.slice(lastEnd), tag: "plain" });
+  }
+
   return tokens;
 }
 
@@ -32,8 +58,8 @@ function tokensToHTML(tokens: TaggedToken[]): string {
   return tokens
     .map((tok) =>
       tok.tag === "plain"
-        ? tok.text + " "
-        : `<span class="tabe-${tok.tag}">${tok.text} </span>`
+        ? tok.text
+        : `<span class="tabe-${tok.tag}">${tok.text}</span>`
     )
     .join("");
 }
