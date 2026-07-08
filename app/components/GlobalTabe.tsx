@@ -11,14 +11,16 @@ async function tagText(text: string): Promise<TaggedToken[]> {
   const doc = nlp(text);
   const tokens: TaggedToken[] = [];
 
-  // Get both terms (words) and their positions to preserve punctuation/whitespace
+  // Get terms and track positions to preserve punctuation/whitespace
   const terms = doc.terms();
   let lastEnd = 0;
 
-  terms.forEach((term: { text: () => string; has: (tag: string) => boolean; start: () => number; end: () => number }) => {
+  terms.forEach((term: any) => {
     const raw = term.text();
-    const start = term.start?.() ?? text.indexOf(raw, lastEnd);
-    const end = term.end?.() ?? start + raw.length;
+
+    // Find this term's position in the original text
+    const start = text.indexOf(raw, lastEnd);
+    const end = start >= 0 ? start + raw.length : lastEnd;
 
     // Preserve text between last term and this term (whitespace, punctuation)
     if (start > lastEnd) {
