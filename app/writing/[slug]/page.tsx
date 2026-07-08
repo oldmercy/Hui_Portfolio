@@ -1,7 +1,6 @@
 import { getAllSlugs, getPaperBySlug } from "@/lib/papers";
 import { notFound } from "next/navigation";
 import PaperReader from "./PaperReader";
-import CustomPageRedirect from "./CustomPageRedirect";
 
 export function generateStaticParams() {
   return getAllSlugs("en").map((slug) => ({ slug }));
@@ -27,11 +26,6 @@ export default async function PaperPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
-  // Gender Gap Math has a custom interactive page
-  if (slug === "gender-gap-math") {
-    return <CustomPageRedirect />;
-  }
 
   const paper = getPaperBySlug("en", slug);
   if (!paper) notFound();

@@ -42,6 +42,13 @@ export type Paper = {
 // ---------------------------------------------------------------------------
 // Static imports — one per paper, per language.
 // Add a new import here whenever a new paper is added.
+//
+// CUSTOM PAPERS:
+// If a paper needs a custom interactive layout (tabs, model comparisons, etc.),
+// create its page at /app/writing/{slug}/page.tsx. No registration or redirect
+// needed — Next.js static routes take precedence over dynamic [slug] routes.
+// Mark the JSON with "body": [] to signal custom rendering.
+// See lib/custom-papers.ts for the list of custom papers.
 // ---------------------------------------------------------------------------
 
 import enGenderMath from "@/content/papers/en/gender-gap-math.json";

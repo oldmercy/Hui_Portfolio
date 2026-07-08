@@ -12,6 +12,12 @@ const { writing: wc } = getSiteContent("en");
 export default function WritingPage() {
   const papers = getAllPapers("en");
   const featured = getFeaturedPaper("en");
+
+  // Validate featured paper exists and is actually in the papers list
+  if (!featured || !papers.find((p) => p.slug === featured.slug)) {
+    throw new Error("Featured paper not found or not registered in papers list");
+  }
+
   const rest = papers.filter((p) => !p.featured);
 
   return (

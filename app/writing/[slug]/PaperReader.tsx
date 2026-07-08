@@ -127,10 +127,28 @@ async function tabeTagText(text: string): Promise<TaggedToken[]> {
 
   const tokens: TaggedToken[] = [];
 
-  // Walk every term in order
-  doc.terms().forEach((term: { text: () => string; has: (tag: string) => boolean }) => {
+  // Get terms and track positions to preserve punctuation/whitespace
+  const terms = doc.terms();
+  let lastEnd = 0;
+
+  terms.forEach((term: any) => {
     const raw = term.text();
-    if (!raw.trim()) { tokens.push({ text: raw, tag: "plain" }); return; }
+
+    // Find this term's position in the original text
+    const start = text.indexOf(raw, lastEnd);
+    const end = start >= 0 ? start + raw.length : lastEnd;
+
+    // Preserve text between last term and this term (whitespace, punctuation)
+    if (start > lastEnd) {
+      const between = text.slice(lastEnd, start);
+      tokens.push({ text: between, tag: "plain" });
+    }
+
+    // Skip empty terms
+    if (!raw.trim()) {
+      lastEnd = end;
+      return;
+    }
 
     let tag: TaggedToken["tag"] = "plain";
     if (term.has("#Value") || term.has("#NumericValue") || /^\d[\d,\.%$]*$/.test(raw)) {
@@ -143,17 +161,23 @@ async function tabeTagText(text: string): Promise<TaggedToken[]> {
       tag = "adj";
     }
     tokens.push({ text: raw, tag });
+    lastEnd = end;
   });
+
+  // Append any remaining text after the last term (trailing punctuation/whitespace)
+  if (lastEnd < text.length) {
+    tokens.push({ text: text.slice(lastEnd), tag: "plain" });
+  }
 
   return tokens;
 }
 
 function renderTagged(tokens: TaggedToken[]): React.ReactNode {
   return tokens.map((tok, i) => {
-    if (tok.tag === "plain") return tok.text + " ";
+    if (tok.tag === "plain") return <span key={i}>{tok.text}</span>;
     return (
       <span key={i} className={`tabe-${tok.tag}`}>
-        {tok.text}{" "}
+        {tok.text}
       </span>
     );
   });
